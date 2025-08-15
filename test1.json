@@ -1,0 +1,24 @@
+{"name":"somename", 
+	"itemList":[
+			
+			{"type":"container", "name":"SUPER_DOMAIN", "padding":[0,1,0,1], "itemList":[
+			{"type":"container", "name":"DOMAIN", "padding":[0,1,0,1], "itemList":[
+			{"type":"container", "name":"SUBDOMAIN", "padding":[0,1,0,1], "itemList":[
+				{"id": 0, "type":"entity", "name":"Element", "padding":[0, 1, 0, 1], "margin":[0, 2, 0, 0]},
+				{"id": 4, "type":"entity", "name":"Actor", "padding":[0, 1, 0, 1], "margin":[0, 0, 0, 0]}
+				]
+			}]}]}, 
+			{"id": 1, "type":"entity", "name":"hej2", "padding":[1,1,1,1], "margin":[0,2,0,2]},
+			{"id": 2, "type":"entity", "name":"hej3"},
+
+			{"type":"container", "name":"ANOTHER_DOMAIN", "padding":[0,2,0,2], "margin":[0,0,0,2], "itemList":[
+				{"id": 3, "type":"entity", "name":"hej4", "margin":[0,0,0,4]}
+			]}
+		   ], 
+	"actionList":[
+			{"type":"communication", "content": "MY_SIGNAL", "fromEntityId": 0, "toEntityId": 3},
+			{"type":"communication", "content": "MY_SIGNAL", "fromEntityId": 4, "toEntityId": 0},
+			{"type":"communication", "content": "MY_SIGNAL", "fromEntityId": 4, "toEntityId": 2},
+			{"type":"communication", "content": "ANOTHER_SIGNAL", "fromEntityId": 3, "toEntityId": 1}
+		     ]
+}

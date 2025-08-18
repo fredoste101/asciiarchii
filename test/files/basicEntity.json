@@ -1,0 +1,9 @@
+{"name":"test", 
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"entity"}
+   	], 
+	"actionList":[],
+	"marginToFirstAction":0,
+	"marginAfterLastAction":0
+}

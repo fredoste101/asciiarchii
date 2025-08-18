@@ -198,9 +198,6 @@ With an arbitrary number of nestings :)
 
 TODO LIST
 
-*Gitify it. Make it a repo. Keep track of changes. Make it real. Feel it. Hear it. Love it.
-
-
 *Add unit tests. Its getting to big to not have tests to verify that I don't break shit for myself...
 
 
@@ -224,21 +221,38 @@ Something like this:
     |              |
     |              |
 
+This might not be as tricky as I exected though.
+Just readjust the margin between if needed and add +1 (or +2) to 
+left/right sides of variant... Completly doable in my humble oppionion.
+But then again, I am the greatest man alive. IMHO ofcourse.
+
 
 * syntax highlighting within vim
-This should be trivial
+This should be trivial... glhf
+
 
 * Much friendlier help-page when doing --help
+  Also a tourough[sic] explantion of how json should be structured.
+  Both a generalized explanation and examples.
 
 
-
-*Sender received for communications. To jump to send-point and receive point with graphical ting
+*Sender received for communications. 
+ To jump to send-point and receive point with graphical ting
 
    |            |
   +-+          +-+
   |S| -------> |R|
   +-+          +-+
    |            |
+
+=========================================
+Developing
+
+TODO: some architecture notes. I.E how do things work, how is structure etc...
+
+-----------------------------------------
+Testing.
+See README.txt in test/ directory
 
 =========================================
 

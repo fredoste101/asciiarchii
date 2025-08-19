@@ -16,16 +16,8 @@ from ..sequence import getSequenceGraph
 
 class Test(unittest.TestCase):
 
+    #Where test files are present
     testFilePath = os.path.dirname(os.path.realpath(__file__)) + "/files"
-
-    #A list of sequences to test and what to compare with
-    fullSequenceFileTestList = [
-        {
-            "file"          :"basicEntity.json", 
-            "output"        :"basicEntityOut.txt",
-            "description"   :"Just a simple entity, no margin no padding."
-        }     
-    ]
 
 
     def test_full_sequence_output(self):
@@ -37,33 +29,36 @@ class Test(unittest.TestCase):
             Will implicitly check padding and margin and such though.
         """
 
-        for fullFileTest in self.fullSequenceFileTestList:
-            testFileName = self.testFilePath + "/" + fullFileTest["file"]
-            
-            with open(testFileName, "r") as testFile:
-                inputData = json.loads(testFile.read())
+        testFileDir = self.testFilePath + "/sequence/"
 
-            sequence = generateSequence(inputData) 
 
-            actualString = getSequenceGraph(sequence)
-
-            testSequenceFileExpectedFile = self.testFilePath + "/" + fullFileTest["output"]
-
-            with open(testSequenceFileExpectedFile, "r") as expectedFile:
+        for (path, dirList, fileList) in os.walk(testFileDir):
+            for f in fileList:
+                if f.endswith(".json"):
+                    #print(f"Testing {f}")
                 
-                expectedString = expectedFile.read().strip() #remove last shit. I think it is EOF or an extra \n
+                    with open(testFileDir + f, "r") as testFile:
+                        inputData = json.loads(testFile.read())
 
-                result = (expectedString == actualString)
+                    sequence = generateSequence(inputData) 
 
-                if not result:
-                    print("EXPECTED:")
-                    print(expectedString)
-                    print("ACTUAL:")
-                    print(actualString)
-                
-                self.assertTrue(result, f"TEST DESCRIPTION: {fullFileTest['description']}")
+                    actualString = getSequenceGraph(sequence)
 
-                    
+                    with open(testFileDir + f[:-5] + "Out.txt", "r") as expectedFile:
+                        
+                        expectedString = expectedFile.read()[:-1] #remove last shit. I think it is an extra \n for unknown reasons
+
+                        result = (expectedString == actualString)
+
+                        if not result:
+                            print("EXPECTED:")
+                            print(expectedString)
+                            print("ACTUAL:")
+                            print(actualString)
+                        
+                        self.assertTrue(result, f"TEST DESCRIPTION: {sequence['description']}")
+
+                        
 
             self.assertTrue(True)
 

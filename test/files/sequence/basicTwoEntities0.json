@@ -1,0 +1,12 @@
+{
+	"name":"test", 
+	"description":"Two entities right next to each other. No margin, no padding.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"entity0"},
+		{"id": 1, "type":"entity", "name":"entity1"}
+   	], 
+	"actionList":[],
+	"marginToFirstAction":0,
+	"marginAfterLastAction":0
+}

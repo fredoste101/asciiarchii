@@ -1,0 +1,12 @@
+{
+	"name":"test", 
+	
+	"description":"Just a simple entity, no margin WITH padding in all directions.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"entity", "padding":[1,1,1,1]}
+   	], 
+	"actionList":[],
+	"marginToFirstAction":0,
+	"marginAfterLastAction":0
+}

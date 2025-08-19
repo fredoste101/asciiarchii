@@ -1,4 +1,6 @@
-{"name":"test", 
+{
+	"name":"test", 
+	"description":"Just a simple entity, no margin no padding.",
 	"itemList":
 	[ 
 		{"id": 0, "type":"entity", "name":"entity"}

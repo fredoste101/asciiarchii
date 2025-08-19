@@ -4,20 +4,33 @@
 #
 # Runs all unit tests for asciiarchii
 #
+# Run with:
+#	./runTest.sh
 
 
 #Move to the correct dir to run tests as a module
 CURR_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 
-pushd $CURR_DIR
+pushd $CURR_DIR &> /dev/null
 
-cd .. 
+TEST_RESULT=1
 
-#Run the tests (3.6 is choosen arbitrarily)
-python3.6 -m asciiarchii.test.test
+if [ $? ]; then
 
-#Go back to where we where when command was run
-popd
+	cd .. 
+
+	#Run the tests (3.6 is choosen arbitrarily)
+	python3.6 -m asciiarchii.test.test
+
+	TEST_RESULT=$?
+
+	#Go back to where we where when command was run
+	popd &> /dev/null
+
+fi
+
+
+exit $TEST_RESULT
 
 
 

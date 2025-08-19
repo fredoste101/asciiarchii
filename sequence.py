@@ -627,7 +627,7 @@ def determineSizeOfActions(sequence):
             if "margin" not in action:
                 #Per default only margin at bottom. 
                 #Now, it will be the only margin that works in the beginning. Maybe ever.
-                action["margin"] = [0, 0, 1, 0]
+                action["margin"] = [0, 0, 0, 0]
 
             width = len(action["content"]) + action["border"][3] + action["border"][1] + action["padding"][1] + action["padding"][3]
             #Now, content is only allowed to be 1 high :/
@@ -818,6 +818,19 @@ def getLeftTraversalDistance(item, stopItem):
     """
         Traverse Left and get the distance from item (excluding),
         until we reach a point where the stopItem is our parent
+
+        That is:
+
+        +---+   +---+   +---+   +---+
+        | A |   | B |   | C |   | D |
+        +---+   +---+   +---+   +---+
+                                  ^
+                                  |
+                <-- Traverse -- START
+
+                Adding all the left side margins
+                From D out.
+
     """
 
     if item["parent"] == stopItem:
@@ -884,120 +897,88 @@ def getEntityCC(sequence, firstEntity, secondEntity):
     toAdd = entitiesToCC[1]["margin"][3] + int((entitiesToCC[1]["widthNoMargin"] + 1) / 2)
     cc += toAdd
 
-    if entitiesToCC[0]["parent"] == entitiesToCC[1]["parent"]:
-        #Trivial case, both mf in the same container
-        #Just add all the widths of all inbetweening siblings
-        #Well. also if any inbetweeners has another parent, we must krångel a bit
+    #Thent we must find the common ancestor of both entities.
+    #Then, we add "inbetweeners" within that common ancestor... 
+    #
+    #Example:
+    #
+    # Lets saye we are looking for CC between a and b, that are
+    # within container A and B respectively (or one is just plain: A == a or B == b):
+    # And A K W and B are within the same ancestor here (have the same parent)
 
-        nextEntitySibling = entitiesToCC[0]["nextEntitySibling"]
+    #    +---+   +---+   +---+   +---+
+    #    | A |   | K |   | W |   | B |
+    #    +---+   +---+   +---+   +---+
+    #      |<---------[CC]-------->|
+    #
+    #  The inbetweeners here are K and W  
+    #  (that can be either containers or entities, doesn't matter)
 
-        topParent = entitiesToCC[0]["parent"]
+    #Then we also need the distance "out" from A into the common ancestor.
+    #Let's say A is build like this:
+    #
+    #       +--------------+
+    #       | +---+  +---+ |
+    #       | | a |  | k | |
+    #       | +---+  +---+ |
+    #       +--------------+ 
+    #        
+    # The distance from a out, is 
+    # width of k + the right side of its parent (padding, border, margin)
 
-        containersCheckedList = []
+    # The same concept occurs for b (if it is in a container), 
+    # but the left side of parent(s)
 
-        while nextEntitySibling != entitiesToCC[1]:
+    entityAFamilyTreeList = getFamiliyTreeList(entitiesToCC[0])
+    entityBFamilyTreeList = getFamiliyTreeList(entitiesToCC[1])
 
-            if nextEntitySibling["parent"] != topParent:
-                currentParent = nextEntitySibling["parent"]
-                while currentParent["parent"] != topParent:
-                    currentParent = currentParent["parent"]
-                
-                if currentParent not in containersCheckedList: 
-                    cc += currentParent["width"]    
-                    containersCheckedList.append(currentParent)
-        
-            else:
-                cc += nextEntitySibling["width"]
+    commonAncestor = getCommonAncestor(entityAFamilyTreeList, entityBFamilyTreeList)
 
-            nextEntitySibling = nextEntitySibling["nextEntitySibling"]
+    #First, find where A is relative to the common ancestor
+
+    startBetween = None
+
+    i = entityAFamilyTreeList.index(commonAncestor)
+
+    if i == 0:
+        #This lies plain, start from it
+        startBetween = entitiesToCC[0]
 
     else:
-        #This one is a bit more tricky.
-
-        #1: First we must find the common ancestor of both entities.
-        #Then, we add "inbetweeners" within that common ancestor... 
-        #Example:
-        # Lets saye we are looking for CC between a and b, that are
-        # within container A and B respectively (or one is just plain: A == a or B == b):
-        # And A K W and B are within the same ancestor here (have the same parent)
-
-        #    +---+   +---+   +---+   +---+
-        #    | A |   | K |   | W |   | B |
-        #    +---+   +---+   +---+   +---+
-        #      |<---------[CC]-------->|
-        #
-        #  The inbetweeners here are K and W  
-        #  (that can be either containers or entities, doesn't matter)
-
-        #Then we also need the distance "out" from A into the common ancestor.
-        #Let's say A is build like this:
-        #
-        #       +--------------+
-        #       | +---+  +---+ |
-        #       | | a |  | k | |
-        #       | +---+  +---+ |
-        #       +--------------+ 
-        #        
-        # The distance from a out, is 
-        # width of k + the right side of its parent (padding, border, margin)
-
-        # The same concept occurs for b, but the left side of parent(s)
+        #We need to traverse like a good boi. 
+        #"To the right to the right,
+        # Everything is in a box to the right"
+        startBetween = entityAFamilyTreeList[i-1] 
 
 
-        entityAFamilyTreeList = getFamiliyTreeList(entitiesToCC[0])
-        entityBFamilyTreeList = getFamiliyTreeList(entitiesToCC[1])
-    
-        commonAncestor = getCommonAncestor(entityAFamilyTreeList, entityBFamilyTreeList)
+    #Now find where B is relative to the common ancestor
+    i = entityBFamilyTreeList.index(commonAncestor)
 
-        #First, find where A is relative to the common ancestor
+    endBetween = None
 
-        startBetween = None
+    if i == 0:
+        #This lies plain, end on it
+        endBetween = entitiesToCC[1]
 
-        i = entityAFamilyTreeList.index(commonAncestor)
+    else:
+        #We need to traverse like a good boi. backwards
+        endBetween = entityBFamilyTreeList[i-1] 
 
-        if i == 0:
-            #This lies plain, start from it
-            startBetween = entitiesToCC[0]
+    nextItem = startBetween["nextSibling"]
 
-        else:
-            #We need to traverse like a good boi. 
-            #"To the right to the right,
-            # Everything is in a box to the right"
-            startBetween = entityAFamilyTreeList[i-1] 
-
-
-        #Now find where B is relative to the common ancestor
-        i = entityBFamilyTreeList.index(commonAncestor)
-
-        endBetween = None
-
-        if i == 0:
-            #This lies plain, end on it
-            endBetween = entitiesToCC[1]
-
-        else:
-            #We need to traverse like a good boi. backwards
-            endBetween = entityBFamilyTreeList[i-1] 
-            
-
-        nextItem = startBetween["nextSibling"]
-
-        #Add all inbetweeners
-        while nextItem != endBetween:
-            toAdd = nextItem["width"]
-            cc += toAdd
-            nextItem = nextItem["nextSibling"]
-
-
-        #The distance out from
-        toAdd = getRightTraversalDistance(entitiesToCC[0], commonAncestor) 
+    #Add all inbetweeners
+    while nextItem != endBetween:
+        toAdd = nextItem["width"]
         cc += toAdd
+        nextItem = nextItem["nextSibling"]
 
-        #The distance out to
-        toAdd = getLeftTraversalDistance(entitiesToCC[1], commonAncestor) 
-        cc += toAdd
+    #The distance out from
+    toAdd = getRightTraversalDistance(entitiesToCC[0], commonAncestor) 
+    cc += toAdd
 
-
+    #The distance out to
+    toAdd = getLeftTraversalDistance(entitiesToCC[1], commonAncestor) 
+    cc += toAdd
 
     return cc
 
@@ -1018,7 +999,6 @@ def getFromAndToEntities(sequence, fromEntityId, toEntityId):
 
     if len(entityList) != 2:
         fatalError(f"Could not find entites for ID from: {fromEntityId} and to: {toEntityId}")
-
 
     if entityList[0]["id"] == entityList[1]["id"]:
         fatalError(f"two entities share the same ID: {entityList[0]['id']}")
@@ -1317,8 +1297,8 @@ def initializeHierarchy(itemList, parent=None):
 
     #sibling relations ship
     for item, nextItem in zip(itemList, itemList[1:]):
-        item["nextSibling"]     = nextItem
-        item["previousSibling"] = item
+        item["nextSibling"]         = nextItem
+        nextItem["previousSibling"] = item
 
 
 def getItemsInContainer(container):
@@ -1447,7 +1427,7 @@ def generateSequence(config):
     """
         Generate the sequence.
 
-        1. read in the config file
+        1. set the initial sequence from the config 
             1.1 Initialize entities
                 1.1.1 determine the header height
             1.2 Set some meta data

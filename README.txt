@@ -259,14 +259,21 @@ See README.txt in test/ directory
 Future
 
 Create more ASCII stuff.
+flow-charts
+
 Mind Map
 
 deployment
 
 tables
 
-flow-charts
-
 All with the ability to interact with vim later on.
 Should rewrite it in lua in the future then...
 Maybe in another life...
+
+
+========================================
+Author: 
+	Fredrik Easterdale
+Contact me: 
+	fredrik.ostdahl@gmail.com

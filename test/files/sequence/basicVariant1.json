@@ -1,0 +1,25 @@
+{
+	"name":"basicVariant1", 
+	"description": "A variant on single entity, with longer name",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"Longer name", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"hi", "entityId":0}
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

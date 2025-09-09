@@ -1,0 +1,14 @@
+{
+	"name":"test", 
+	"description":"One on action, no margin, no padding.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"entity0", "margin":[0,0,0,0]}
+   	], 
+	"actionList":
+	[
+		{"type":"on", "content": "longerNameThanEntity", "entityId": 0, "padding":[0, 0, 0, 0]}
+	],
+	"marginToFirstAction":1,
+	"marginAfterLastAction":0
+}

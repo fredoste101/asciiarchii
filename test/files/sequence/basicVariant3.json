@@ -1,0 +1,27 @@
+{
+	"name":"basicVariant3", 
+	"description": "Variant on single entity, 3 on-entities in it with margin-top-bottom",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"Longer name", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"Hello there", "entityId":0, "margin":[1,0,1,0]},
+				{"type":"on", "content":"yes", "entityId":0, "margin":[1,0,1,0]},
+				{"type":"on", "content":"very nice", "entityId":0, "margin":[1,0,1,0]}
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

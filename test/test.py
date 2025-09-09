@@ -56,9 +56,8 @@ class Test(unittest.TestCase):
                             print("ACTUAL:")
                             print(actualString)
                         
-                        self.assertTrue(result, f"TEST DESCRIPTION: {sequence['description']}")
-
-                        
+                        self.assertTrue(result, f"See earlier messages for error.\n" \
+                                                f"TEST NAME: {sequence['name']}\nTEST DESCRIPTION: {sequence['description']}")
 
             self.assertTrue(True)
 

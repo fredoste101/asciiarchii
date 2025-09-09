@@ -1,0 +1,33 @@
+{
+	"name":"basicVariant4", 
+	"description": "Variant with two branches over single entity",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"b0", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"yes", "entityId":0, "margin":[1,0,2,0]}
+			 ]
+			},
+
+			{"name":"b1", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"hej", "entityId":0, "margin":[1,0,0,0]}
+			 ]
+			}
+
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

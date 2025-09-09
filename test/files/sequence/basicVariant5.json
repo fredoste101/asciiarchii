@@ -1,0 +1,41 @@
+{
+	"name":"basicVariant5", 
+	"description": "Variant, single entity, 3 on-actions in 3 branches, margin top-bottom",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"b0", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"yes", "entityId":0, "margin":[1,0,3,0]}
+			 ]
+			},
+
+			{"name":"b1", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"hej", "entityId":0, "margin":[3,0,1,0]}
+			 ]
+			},
+
+			{"name":"b2", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"hej", "entityId":0, "margin":[2,0,1,0]}
+			 ]
+			}
+
+
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

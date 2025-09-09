@@ -1,0 +1,25 @@
+{
+	"name":"basicVariant0", 
+	"description":"Simplest type of variant. One variant over an over-action, single entity",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"entity", "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"I", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"hi", "entityId":0}
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

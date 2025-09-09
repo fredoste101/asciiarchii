@@ -1,0 +1,63 @@
+{
+	"name":"basicVariant10", 
+	"description": "Russion doll on middle entity of three.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,1,0,1]},
+		{"id": 1, "type":"entity", "name":"alice", "margin":[0,0,0,0]},
+		{"id": 2, "type":"entity", "name":"alice", "margin":[0,1,0,1]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"topLvl", 
+			 "actionList":
+			 [
+				{"type":"variant", 
+				 "branchList":
+				 [
+					{"name":"subbranchlongname", 
+					 "actionList":
+					 [
+						{"type":"variant", 
+						 "branchList":
+						 [
+							{"name":"another", 
+							 "actionList":
+							 [
+								{"type":"variant", 
+								 "branchList":
+								 [
+									{"name":"russian doll", 
+									 "actionList":
+									 [
+										{
+										 "type":"on", 
+										 "content":"tada", 
+										 "entityId":1, 
+										 "margin":[1,0,1,0], 
+										 "padding":[1,1,1,1]
+										}
+									 ]
+									}
+								 ]
+								}
+							 ]
+							}
+						 ]
+						}
+					 ]
+					}
+				 ]
+				}
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

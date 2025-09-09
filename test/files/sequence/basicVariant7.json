@@ -1,0 +1,32 @@
+{
+	"name":"basicVariant7", 
+	"description": "Variant over 1 entity. 2 branches with 1 on-action each. Margin and padding on these.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"b0", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"yes", "entityId":0, "margin":[0,4,1,4], "padding":[1,1,1,1]}
+			 ]
+			},
+			{"name":"b1", 
+			 "actionList":
+			 [
+				{"type":"on", "content":"yes", "entityId":0, "margin":[0,2,1,2], "padding":[2,2,2,2]}
+			 ]
+			}
+
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

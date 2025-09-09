@@ -271,6 +271,11 @@ that one wants, as long as they are not in presented grammar. I.E one can add:
 "myField":3, and that will be ignored, but adding "type":"myType" to an item will
 mess up the functionality.
 
+Right... Also there will be some fields created during runtime,
+so if any of the exists, they will be overwritten...
+Example "entityList" will be created, so if that field exist,
+it will be overwritten.
+
 
 ---- EXAMPLE -----
 Now, generalized rules are good. 
@@ -382,6 +387,9 @@ Just readjust the margin between if needed and add +1 (or +2) to
 left/right sides of variant... Completly doable in my humble oppionion.
 But then again, I am the greatest man alive. IMHO ofcourse.
 
+This sort of works now on single entity...
+And also margin and padding is not supported.
+
 
 
 * Much friendlier help-page when doing --help
@@ -416,6 +424,7 @@ See README.txt in test/ directory
 Future
 
 Create more ASCII stuff.
+
 flow-charts
 
 trees (for file structures and such)

@@ -1,0 +1,36 @@
+{
+	"name":"basicVariant8", 
+	"description": "A variant on single entity, with one variant within it",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"b0", 
+			 "actionList":
+			 [
+				{"type":"variant", 
+				 "branchList":
+				 [
+					{"name":"subbranchlongname", 
+					 "actionList":
+					 [
+						{"type":"on", "content":"yes", 
+						 "entityId":0, "margin":[1,0,1,0], "padding":[1,1,1,1]}
+					 ]
+					}
+				 ]
+				}
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

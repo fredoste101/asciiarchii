@@ -6,6 +6,9 @@
 #
 # Run with:
 #	./runTest.sh
+#
+# Or to run single test case:
+#	./runTest.sh Test.<case>
 
 
 #Move to the correct dir to run tests as a module
@@ -20,7 +23,7 @@ if [ $? ]; then
 	cd .. 
 
 	#Run the tests (3.6 is choosen arbitrarily)
-	python3.6 -m asciiarchii.test.test
+	python3.6 -m asciiarchii.test.test $@
 
 	TEST_RESULT=$?
 

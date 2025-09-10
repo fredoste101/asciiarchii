@@ -1,0 +1,48 @@
+{
+	"name":"test", 
+	"description":"More advanced sequence with more features involved",
+	"itemList":
+	[ 
+		{"type":"container", "name":"TOP", "padding":[0,1,0,1], 
+		"itemList":[
+			{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]}
+		]},
+
+		{"id": 1, "type":"entity", "name":"bob", "margin":[0,0,0,5]},
+		{"id": 2, "type":"entity", "name":"claire", "margin":[0,0,0,5]},
+
+		{"type":"container", "name":"ANOTHER ONE", "margin":[0,0,0,3], "padding":[0,1,0,1], 
+		 "itemList":[
+			
+			{"id": 3, "type":"entity", "name":"David", "margin":[0,0,0,0]},
+			{"type":"container", "name":"DEEPER", "margin":[0,0,0,2], "padding":[0,1,0,1], "itemList":[
+				{"type":"entity", "id":4, "name":"Erin"}
+
+			]}
+		]},
+
+		{"id": 5, "type":"entity", "name":"fred", "padding":[0,1,0,1], "margin":[0,0,0,5]},
+		{"id": 6, "type":"entity", "name":"gina", "margin":[0,0,0,5]},
+
+		{"type":"container", "name":"LAST CONTAINER", "margin":[0,0,0,3], "padding":[0,2,0,2], 
+		 "itemList":[
+			
+			{"id": 7, "type":"entity", "name":"hank", "margin":[0,0,0,0]},
+			{"type":"container", "name":"LEVEL1", "margin":[0,2,0,2], "padding":[0,1,0,1], 
+			 "itemList":[
+				{"type":"entity", "id":8, "name":"iris"},
+				{"type":"container", "name":"LEVEL2", "margin":[0,0,0,2], "padding":[0,1,0,1], 
+				 "itemList":[
+					{"id": 9, "type":"entity", "name":"jon", "margin":[0,2,0,0]},
+					{"id": 10, "type":"entity", "name":"karen", "margin":[0,0,0,0]}
+				]}
+
+			]},
+			{"id": 11, "type":"entity", "name":"lars", "margin":[0,0,0,0]}
+		]}
+   	], 
+	"actionList":[
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":0
+}

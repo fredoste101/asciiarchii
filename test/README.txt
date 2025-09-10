@@ -12,3 +12,7 @@ Or with shell-script:
 
 runTest.sh
 
+Or define specifik test case as:
+
+runTest.sh Test.<testCase>
+

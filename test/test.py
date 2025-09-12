@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
 
     #Where test files are present
     testFilePath = os.path.dirname(os.path.realpath(__file__)) + "/files"
-    testFileDir  = testFilePath + "/sequence/"
+    testFileDir  = testFilePath + "/sequence"
 
     def test_getEntityCC(self):
         """
@@ -54,13 +54,8 @@ class Test(unittest.TestCase):
 
             for i, e1 in enumerate(sequence["entityList"]):
                 for j, e2 in enumerate(sequence["entityList"][i:]):
-                    #print(f"{e1['name']} <-> {e2['name']}")
                     cc = getEntityCC(sequence, e1, e2)
                     self.assertEqual(expectedValueListList[i][j], cc)
-                    #print(cc)
-
-            
-        self.assertTrue(True)
 
 
     def test_full_sequence_output(self):
@@ -68,25 +63,35 @@ class Test(unittest.TestCase):
             Run a full sequence Generation and string-getting,
             and then compare to expected output.
 
-            Only test the dislplayed graph. No attributes like color and such.
+            Only test the dislplayed graph. 
+            No attributes like color and such.
             Will implicitly check padding and margin and such though.
+
+            Note that these test are build by:
+                1. generating a graph from an input file
+                2. inspecting manually that everything looks proper in the output
+                3. putting that input file -> output in the test framework
+
+            Thus, if the inspection missed errors in the graph,
+            the test will be incorrectly made. Does that make sense? 
         """
 
         for (path, dirList, fileList) in os.walk(self.testFileDir):
             for f in fileList:
                 if f.endswith(".json"):
-                    #print(f"Testing {f}")
+                    #print(f"Testing {path} {f}")
                 
-                    with open(self.testFileDir + f, "r") as testFile:
+                    with open(path + "/" + f, "r") as testFile:
                         inputData = json.loads(testFile.read())
 
                     sequence = generateSequence(inputData) 
 
                     actualString = getSequenceGraph(sequence)
 
-                    with open(self.testFileDir + f[:-5] + "Out.txt", "r") as expectedFile:
-                        
-                        expectedString = expectedFile.read()[:-1] #remove last shit. I think it is an extra \n for unknown reasons
+                    with open(path + "/" + f[:-5] + "Out.txt", "r") as expectedFile:
+
+                        #remove last shit. I think it is an extra \n for unknown reasons
+                        expectedString = expectedFile.read()[:-1] 
 
                         result = (expectedString == actualString)
 
@@ -98,6 +103,7 @@ class Test(unittest.TestCase):
                         
                         self.assertTrue(result, f"See earlier messages for error.\n" \
                                                 f"TEST NAME: {sequence['name']}\nTEST DESCRIPTION: {sequence['description']}")
+                
 
             self.assertTrue(True)
 

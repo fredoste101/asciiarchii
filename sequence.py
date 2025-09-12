@@ -290,30 +290,44 @@ def determineRelativePositionOfCommunicationAction(sequence, communication, row)
 
     arrowChar = ">"
 
+    contentRow = row + communication['margin'][0]
 
-    
+    lineRow = contentRow + 1 #content is now only one line long
+
 
     if fromCol < toCol:
-        communicationMiddle = fromCol + int((toCol - fromCol - 1) / 2)
+        communicationMiddle = fromCol + int((toCol - fromCol) / 2)
 
-        communication["arrowPos"] = [toCol - 1, row + 1]
+        communication["arrowPos"] = [toCol - 1, lineRow]
         communication["arrowChar"] = ">"
 
-        communication["lineStartPos"] = [fromCol + 1, row + 1]
+        communication["lineStartPos"] = [fromCol + 1, lineRow]
 
-        communication["lineEndPos"] = [toCol - 2, row + 1]
+        communication["lineEndPos"] = [toCol - 2, lineRow]
         
     else:
-        communicationMiddle = toCol + int((fromCol - toCol - 1) / 2)
+        communicationMiddle = toCol + int((fromCol - toCol) / 2)
 
-        communication["arrowPos"] = [toCol + 1, row + 1]
+        communication["arrowPos"] = [toCol + 1, lineRow]
         communication["arrowChar"] = "<"
 
-        communication["lineStartPos"] = [toCol + 2, row + 1]
-        communication["lineEndPos"] = [fromCol - 1, row + 1]
+        communication["lineStartPos"] = [toCol + 2, lineRow]
+        communication["lineEndPos"] = [fromCol - 1, lineRow]
 
-    communication["contentStartPos"] = [communicationMiddle - int((len(communication["content"]) - 1)/2), row]
-    communication["contentEndPos"]   = [communicationMiddle + int(len(communication["content"])/2), row]
+    contentLength = len(communication["content"])
+
+
+    #Aight. in future maybe a proper padding is due... but that is future. not present.
+    calculatedPadding = communication["size"][0] - contentLength 
+
+    if calculatedPadding % 2 == 0:
+        communication["contentStartPos"] = [communicationMiddle - int((contentLength - 1) / 2), contentRow]
+        communication["contentEndPos"]   = [communicationMiddle + int(contentLength / 2), contentRow]
+
+    else:
+        communication["contentStartPos"] = [communicationMiddle - int((contentLength) / 2), contentRow]
+        communication["contentEndPos"]   = [communicationMiddle + int((contentLength - 1) / 2), contentRow]
+        
     
     [e1, e2] = getFromAndToEntities(sequence, fromEntity["id"], toEntity["id"]) 
 
@@ -381,7 +395,9 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
                 #fatalError(f"Type {branchAction['type']} what to do??")
 
             else:
-                fatalError(f"Type {branchAction['type']} not supported now")
+                determineRelativePositionOfCommunicationAction(sequence, branchAction, branchContentRow)
+                branchContentRow += branchAction["size"][1]
+                #fatalError(f"Type {branchAction['type']} not supported now")
 
 
         branchPos = copy.copy(branchPos) 
@@ -763,7 +779,6 @@ def getCharFromItem(item, x, y):
     return [False, False]
 
 
-
 def addTimeLines(sequence):
     """
         Add the timeLines for each entity.
@@ -861,7 +876,6 @@ def determineSizeOfActions(sequence):
             
         else:
             fatalError("error only 'on', and 'communication' supported now") 
-
 
 
 def determineSizeOfOnAction(action):
@@ -1538,6 +1552,7 @@ def getEntitySides(entity):
 def getVariantLeft(variant):
     return variant["left"] + variant["border"][3] + variant["padding"][3] + variant["margin"][3] - 1
 
+
 def getVariantRight(variant):
     return variant["right"] + variant["border"][1] + variant["padding"][1] + variant["margin"][1] - 1
 
@@ -1659,7 +1674,13 @@ def addCC(sequence, fromEntity, toEntity, distanceToAdd):
     """
         Add distance (centrum-centrum) between two entities.
 
+        Then fromEntity must be before toEntity in the entityList.
+
+        distanceToAdd is the total number of chars to add between them,
+        and will be distributed between every inbetween entity.
+
         TODO: explain how this is done, and why...
+        even more TODO: add unit test for this to see how it behaves and fix any inconsistencies.
     """
 
     #Aigh then. We gonna need all involved mfs here.
@@ -1668,8 +1689,6 @@ def addCC(sequence, fromEntity, toEntity, distanceToAdd):
                                fromEntity["id"], 
                                toEntity["id"])
 
-    distanceNeeded = action["width"] - cc 
-
     if distanceToAdd % 2 == 1:
         #Ok. Need one more if uneven to get 1 margin in both directions on signal-content
         distanceToAdd += 1
@@ -1677,6 +1696,10 @@ def addCC(sequence, fromEntity, toEntity, distanceToAdd):
     #Ok. We can be really clever here, and sort of get the proportional increase per item,
     #or we can go with the easy route and just distribute them evenly.
     #easy route, I choose you
+
+    #CHECKME: what if distanceToAdd is really small, and there are a lot of items in the list?
+    #does it still work, and who gets the addage? I think this is wrong as of now :(
+    #TODO: fix the above issue that most likely exists...
 
     distanceToAddEachItem = int(distanceToAdd / len(itemList))
 
@@ -1712,17 +1735,11 @@ def addCC(sequence, fromEntity, toEntity, distanceToAdd):
 
     else:
         determineSizeOfContainer(itemList[-1])
-
-    entityList = []
-
-    for entity in sequence["entityList"]:
-        if (entity["id"] == action["fromEntityId"]) or (entity["id"] == action["toEntityId"]):
-            entityList.append(entity)
     
     #This is a travesty... should really nicen'[tm] things up...
     #I mean, in the CC-calc the family trees are already there. Should mayhaps add familyTrees to
     #the elements themselfs at the start, since it is a static feature.
-    familyTreeListList = [getFamiliyTreeList(entityList[0]), getFamiliyTreeList(entityList[1])]
+    familyTreeListList = [getFamiliyTreeList(fromEntity), getFamiliyTreeList(toEntity)]
 
     commonAncestor = getCommonAncestor(familyTreeListList[0], familyTreeListList[1])
 
@@ -1803,8 +1820,6 @@ def resizeItemWidth(sequence):
     
             action["width"] = cc 
             action["size"][0] = cc
-
-    
 
 
 def determineSizeOfContainer(container):
@@ -2061,6 +2076,7 @@ def getOnActionSides(onAction):
         Return how much this entity sticks out each side from middle column.
         
         This is including margin, border, padding.
+        Example (no left/right-margin):
 
                  |                  |
                  |                  |
@@ -2083,7 +2099,6 @@ def getOnActionSides(onAction):
         left += 1
 
     return [left, right]
-
 
 
 def setVariantSides(sequence, variant):
@@ -2295,7 +2310,6 @@ def initializeActions(sequence):
     determineSizeOfActions(sequence)
 
     initializeVariants(sequence)
-        
 
 
 def determineHeightOfSequence(sequence):
@@ -2347,7 +2361,6 @@ def createContentList(sequence):
             if "jumpCmd" in a:
                 jump = {"cmd":a["jumpCmd"], "startCoord":a["contentStartPos"], "endCoord":a["contentEndPos"]}
                 commandList.append(jump)
-            
 
     sequence["cmdList"] = commandList
 
@@ -2375,7 +2388,6 @@ def generateSequence(config):
     sequence = config
 
     initializeEntities(sequence)
-
 
     sequence["headerHeight"] = determineHeightsOfHeader(sequence["itemList"]) 
 

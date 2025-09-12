@@ -1,0 +1,60 @@
+{
+	"name":"basicVariant17", 
+	"description": "One entity, four levels of variants",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice",   "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"lvl0", 
+			 "actionList":
+			 [
+				{"type":"variant", 
+				 "branchList":
+				 [
+					{"name":"lvl1", 
+					 "actionList":
+					 [
+						{"type":"variant", 
+						 "branchList":
+						 [
+							{"name":"lvl2", 
+							 "actionList":
+							 [
+								{"type":"variant", 
+								 "branchList":
+								 [
+									{"name":"lvl3", 
+									 "actionList":
+									 [
+										{
+										 "type":"on", 
+										 "content":"Action", 
+										 "entityId":0,
+										 "margin":[1,0,1,0] 
+										}
+									 ]
+									}	
+								 ]
+								}
+							 ]
+							}	
+						 ]
+						}
+					 ]
+					}	
+				 ]
+				}
+			 ]
+		 	}	
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":2
+}

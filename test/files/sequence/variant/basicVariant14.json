@@ -1,0 +1,49 @@
+{
+	"name":"basicVariant14", 
+	"description": "Variant over three entities, with two branches.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice",   "margin":[0,0,0,0]},
+		{"id": 1, "type":"entity", "name":"bob",     "margin":[0,0,0,0]},
+		{"id": 2, "type":"entity", "name":"claire",  "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"frwd", 
+			 "actionList":
+			 [
+						{
+						 "type":"communication", 
+						 "content":"message", 
+						 "fromEntityId":0, 
+						 "toEntityId":1
+						}
+			 ]
+			},
+			{"name":"rvrs", 
+			 "actionList":
+			 [
+						{
+						 "type":"communication", 
+						 "content":"hello", 
+						 "fromEntityId":1, 
+						 "toEntityId":0
+						},
+						{
+						 "type":"communication", 
+						 "content":"world", 
+						 "fromEntityId":1, 
+						 "toEntityId":2
+						}
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":2
+}

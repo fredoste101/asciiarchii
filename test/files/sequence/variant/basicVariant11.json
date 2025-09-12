@@ -1,0 +1,40 @@
+{
+	"name":"basicVariant11", 
+	"description": "A variant over 2 entities by two on-entities over each.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]},
+		{"id": 1, "type":"entity", "name":"bob",   "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"topLvl", 
+			 "actionList":
+			 [
+				
+						{
+						 "type":"on", 
+						 "content":"tada", 
+						 "entityId":0, 
+						 "margin":[1,0,1,0], 
+						 "padding":[1,1,1,1]
+						},
+						{
+						 "type":"on", 
+						 "content":"tada", 
+						 "entityId":1, 
+						 "margin":[1,0,1,0], 
+						 "padding":[1,1,1,1]
+						}
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":2
+}

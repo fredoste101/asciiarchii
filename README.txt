@@ -1,5 +1,6 @@
 
-==== ASCII Archiitecture ====
+
+=== ASCII Archiitecture ===
 
 Create sequence flows in ascii,
 by using JSON-input
@@ -8,14 +9,6 @@ by using JSON-input
 At least that's the main idea.
 Also get some meta data to feed vim to later be able
 to connect the sequence flow to code.
-
-
-Also, this is stupid, but I've interchanged the usage of 
- line and y,
-as well as 
- col and x.
-Better to just use one. Which one doesn't matter but just pick one u retard.
-
 
 ===== Introduction =====
 
@@ -133,8 +126,8 @@ The timeLine will be in the middle of the entities border-size.
 
 Now, actions:
 An action might be a onEntity-thing (comment/info/event), 
-it might be a communication between entities (signaling),
-or it can be communication between outside and an entity (signaling from left or right)
+or
+it might be a communication between entities (signaling/message passing/function calling)
 
 An example of a onEntity-type action:
 
@@ -162,22 +155,8 @@ An example of a communication:
     |              |
 
 
-An example of a outsideCommunication:
 
-+--------+
-| entity |
-+--------+
-    |
-    |    SIGNAL
-    |<--------------
-    |
-
-outsideCommunication is not implemented
-
-
-============================================
-
-Hierarchies
+=== Hierarchies ===
 
 
 You can add hierarchical entites, I.E containers.
@@ -198,174 +177,16 @@ An example might look like:
 
 With an arbitrary number of nestings :)
 
-=============================================
 
-==== INPUT SYNTAX ====
+=== VARIANTS ===
 
-Syntax is shown in BNF-format (or, at least as well as I can muster).
-Note that '[' is the literal '[' while [ is the BNF defined 'optional'-symbol. 
-Same with '{' and {
+A variant is basically a label around a certain section in the sequence.
+A variant can contain many branches, mimicing different conditions
+leading to different actions in the sequence.
 
-Input is a JSON-file with the following syntax 
-(field order is not important, as long as it is valid JSON):
+A branch in a variant can contain both on and communication actions,
+and we can of course have variants within a branch, to do nesting conditions (has this been confirmed?).
 
-<sequenceConfig> ::= '{' <name>, <itemList>, <actionList>, [<options>] '}'
-
-<name> ::= "name":"<string>"
-
-<itemList> ::= "itemList": '[' <items> ']'
-
-<items> ::= <item> | <item>, <items>
-
-<item> ::= <entity> | <container>
-
-<entity> ::= '{' <name>, "type":"entity", "id":<num> [<entityOptions>] '}'
-
-<container> ::= '{' <name>, "type":"container", [<containerOptions>] '}'
-
-<actionList> ::= "actionList": '[' <actions> ']'
-
-<actions> ::= <action> | <action>, <actionList>
-
-<action> ::= <on> | <communication>
-
-<on> ::= '{' "type":"on", "content":"<string>", "entityId":<num>, [<onOptions>] '}'
-
-<comunication> ::= '{' "type":"communication", "content":"<string>", "fromEntityId":<num>, "toEntityId":<num>, [<communcationOptions>] '}'
-
-<options> ::= ["marginToFirstAction":<num>], ["marginFromLastAction":<num>] 
-
-<entityOptions> ::= [<sizeOptions>]
-
-<containerOptions> ::= [<sizeOptions>]
-
-<onOptions> ::= [<sizeOptions>]
-
-<communicationOptions> ::= NULL
-
-<sizeOptions> ::= [<padding>], [<border>], [<margin>]
-
-<padding> ::= "padding":<sizeArray>
-
-<border> ::= "border":<sizeArray>
-
-<margin> ::= "margin":<sizeArray>
-
-<sizeArray> ::= '[' <top>, <right>, <bottom>, <left> ']'
-
-<top> ::= <num>
-
-<right> ::= <num>
-
-<bottom> ::= <num>
-
-<left> ::= <num>
-
-<string> ::= [a-zA-Z0-9_-]*
-
-<num> ::= [0-9]+
-
-
-Note also that every json-object can contain whatever json-compliant fields 
-that one wants, as long as they are not in presented grammar. I.E one can add:
-"myField":3, and that will be ignored, but adding "type":"myType" to an item will
-mess up the functionality.
-
-Right... Also there will be some fields created during runtime,
-so if any of the exists, they will be overwritten...
-Example "entityList" will be created, so if that field exist,
-it will be overwritten.
-
-
----- EXAMPLE -----
-Now, generalized rules are good. 
-An example is better:
-
-{
-	"name":"test", 
-	"itemList":
-	[ 
-		{"type":"container", "name":"TOP", "padding":[0,1,0,1], 
-		"itemList":[
-			{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]}
-		]},
-
-		{"id": 1, "type":"entity", "name":"bob", "margin":[0,0,0,5]},
-		{"id": 2, "type":"entity", "name":"claire", "margin":[0,0,0,5]},
-
-		{"type":"container", "name":"ANOTHER ONE", "margin":[0,0,0,3], "padding":[0,1,0,1], 
-		 "itemList":[
-			
-			{"id": 3, "type":"entity", "name":"David", "margin":[0,0,0,0]},
-			{"type":"container", "name":"DEEPER", "margin":[0,0,0,2], "padding":[0,1,0,1], "itemList":[
-				{"type":"entity", "id":4, "name":"Erin"}
-
-			]}
-		]},
-
-		{"id": 5, "type":"entity", "name":"fred", "padding":[0,1,0,1], "margin":[0,0,0,5]},
-		{"id": 6, "type":"entity", "name":"gina", "margin":[0,0,0,5]},
-
-		{"type":"container", "name":"LAST CONTAINER", "margin":[0,0,0,3], "padding":[0,2,0,2], 
-		 "itemList":[
-			
-			{"id": 7, "type":"entity", "name":"hank", "margin":[0,0,0,0]},
-			{"type":"container", "name":"LEVEL1", "margin":[0,2,0,2], "padding":[0,1,0,1], 
-			 "itemList":[
-				{"type":"entity", "id":8, "name":"iris"},
-				{"type":"container", "name":"LEVEL2", "margin":[0,0,0,2], "padding":[0,1,0,1], 
-				 "itemList":[
-					{"id": 9, "type":"entity", "name":"jon", "margin":[0,2,0,0]},
-					{"id": 10, "type":"entity", "name":"karen", "margin":[0,0,0,0]}
-				]}
-
-			]},
-			{"id": 11, "type":"entity", "name":"lars", "margin":[0,0,0,0]}
-		]}
-   	], 
-
-	"actionList":
-	[
-			{"type":"communication", "content": "MESSAGE", "fromEntityId": 11, "toEntityId": 7},
-			{"type":"on", "content": "On something", "entityId":5}
-	],
-	"marginToFirstAction":2,
-	"marginAfterLastAction":0
-}
-
-This will generate the following diagram:
-
-+---------+     +---+     +------+   +---------------------+        +------+        +----+   +--------------------------------------------------+
-| TOP     |     |bob|     |claire|   | ANOTHER ONE         |        | fred |        |gina|   |  LAST CONTAINER                                  |
-| +-----+ |     +---+     +------+   | +-----+  +--------+ |        +------+        +----+   |  +----+  +----------------------------+  +----+  |
-| |alice| |       |          |       | |David|  | DEEPER | |           |              |      |  |hank|  | LEVEL1                     |  |lars|  |
-| +-----+ |       |          |       | +-----+  | +----+ | |           |              |      |  +----+  | +----+  +----------------+ |  +----+  |
-+----|----+       |          |       |    |     | |Erin| | |           |              |      |    |     | |iris|  | LEVEL2         | |    |     |
-     |            |          |       |    |     | +----+ | |           |              |      |    |     | +----+  | +---+  +-----+ | |    |     |
-     |            |          |       |    |     +---|----+ |           |              |      |    |     |   |     | |jon|  |karen| | |    |     |
-     |            |          |       +----|---------|------+           |              |      |    |     |   |     | +---+  +-----+ | |    |     |
-     |            |          |            |         |                  |              |      |    |     |   |     +---|-------|----+ |    |     |
-     |            |          |            |         |                  |              |      |    |     +---|---------|-------|------+    |     |
-     |            |          |            |         |                  |              |      +----|---------|---------|-------|-----------|-----+
-     |            |          |            |         |                  |              |           |         |         |       |           |      
-     |            |          |            |         |                  |              |           |         |         |       |           |      
-     |            |          |            |         |                  |              |           |         |     MESSAGE     |           |      
-     |            |          |            |         |                  |              |           |<--------------------------------------|      
-     |            |          |            |         |                  |              |           |         |         |       |           |      
-     |            |          |            |         |           +------------+        |           |         |         |       |           |      
-     |            |          |            |         |           |On something|        |           |         |         |       |           |      
-     |            |          |            |         |           +------------+        |           |         |         |       |           |
-
-
-
-
-
-===== TODO LIST =====
-
-* Add variants
-This is also a bit tricky. Again, the widths might need to be reavaluated sligthly(TM)
-
-Something like this:
 
 +--------+    +---------+     
 | entity |    | entity2 |
@@ -382,14 +203,40 @@ Something like this:
     |              |
     |              |
 
-This might not be as tricky as I exected though.
-Just readjust the margin between if needed and add +1 (or +2) to 
-left/right sides of variant... Completly doable in my humble oppionion.
-But then again, I am the greatest man alive. IMHO ofcourse.
+An example of a variant with 2 branches:
 
-This sort of works now on single entity...
-And also margin and padding is not supported.
++-----+    +---+    +------+
+|alice|    |bob|    |claire|
++-----+    +---+    +------+
+   |         |         |    
+   |         |         |    
+  +----+----------------+   
+  |frwd|     |         ||   
+  +----+     |         ||   
+  || message |         ||   
+  ||-------->|         ||   
+  ||         |         ||   
+  +---------------------+   
+  |rvrs|     |         ||   
+  +----+     |         ||   
+  ||  hello  |         ||   
+  ||<--------|         ||   
+  ||         |         ||   
+  ||         |  world  ||   
+  ||         |-------->||   
+  ||         |         ||   
+  +---------------------+   
+   |         |         |    
+   |         |         |    
 
+=============================================
+
+=== INPUT SYNTAX ===
+See the file inputSyntax.txt in the same directory as this :)
+
+
+=== TODO LIST ===
+Things that I want to do to increase functionality
 
 
 * Much friendlier help-page when doing --help
@@ -398,7 +245,7 @@ And also margin and padding is not supported.
 
 
 * syntax highlighting within vim
-This should be trivial... glhf
+  This should be trivial... glhf
 
 
 *Sender received for communications. 
@@ -410,18 +257,66 @@ This should be trivial... glhf
   +-+          +-+
    |            |
 
-=========================================
-Developing
+ Should be relativaly straight forward. If on and communication works properly,
+ this is just both combined :)
+
+*starting/activation of entity like:
+
++---+     +---+
+| A |     | B |
++---+     +---+
+  |
+  |  START
+  |-------->+
+  |         |
+  |         |
+
+* outsideCommunication
+An example of a outsideCommunication:
+
++--------+
+| entity |
++--------+
+    |
+    |    SIGNAL
+    |<--------------
+    |
+
+* onMany - a on type action but covering many entities
+
+
+* I don't think style works at all with variants.
+  It would be nice with margins/padding on variants, to make it a lot nicer looking.
+  It tends to become very squished together now when we nestle a lot of them
+
+
+* yes, well. I don't like stupid things. 
+  Remove width and height and replace them with size => [width, height]
+  Also, this is stupid, but I've interchanged the usage of 
+   line and y,
+  as well as 
+   col and x.
+  Better to just use one. Which one doesn't matter but just pick one u retard.
+  
+
+=== Developing ===
+
+Aight, so I like code that is spaced far apart. So what? sue me.
+Thus there are a lot of extra spaces, newlines and stuff, where others might not use it.
+Also I like to align stuff in columns as well. So what? sue me again. C if I care.
+
 
 TODO: some architecture notes. I.E how do things work, how is structure etc...
 
 -----------------------------------------
-Testing.
+
+
+=== Testing ===
+
 See README.txt in test/ directory
 
-=========================================
 
-Future
+=== Future ===
 
 Create more ASCII stuff.
 

@@ -1,0 +1,40 @@
+{
+	"name":"basicVariant13", 
+	"description": "Three entities. A message between A->B and then B->C in single branch.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice",   "margin":[0,0,0,0]},
+		{"id": 1, "type":"entity", "name":"bob",     "margin":[0,0,0,0]},
+		{"id": 2, "type":"entity", "name":"claire",  "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"topLvl", 
+			 "actionList":
+			 [
+				
+						{
+						 "type":"communication", 
+						 "content":"message", 
+						 "fromEntityId":0, 
+						 "toEntityId":1
+						},
+						{
+						 "type":"communication", 
+						 "content":"forward", 
+						 "fromEntityId":1, 
+						 "toEntityId":2
+						}
+
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":2
+}

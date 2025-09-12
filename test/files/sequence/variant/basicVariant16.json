@@ -1,0 +1,40 @@
+{
+	"name":"basicVariant16", 
+	"description": "Three entities with three branches and some communications and on.",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice",   "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"frwd", 
+			 "actionList":
+			 [
+				{"type":"variant", 
+				 "branchList":
+				 [
+					{"name":"frwd", 
+					 "actionList":
+					 [
+						{
+						 "type":"on", 
+						 "content":"Action", 
+						 "entityId":0,
+						 "margin":[1,0,1,0] 
+						}
+					 ]
+					}	
+				 ]
+				}
+			 ]
+		 	}	
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":2
+}

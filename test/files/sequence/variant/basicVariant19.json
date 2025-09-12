@@ -1,0 +1,69 @@
+{
+	"name":"basicVariant19", 
+	"description": "Two entities, nested variants",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice",   "margin":[0,0,0,0]},
+		{"id": 1, "type":"entity", "name":"bob",   "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"lvl0", 
+			 "actionList":
+			 [
+				{
+				 "type":"communication", 
+				 "content":"MESSAGE", 
+				 "fromEntityId":0,
+				 "toEntityId":1,
+				 "margin":[0,0,0,0] 
+				},
+				{"type":"variant", 
+				 "branchList":
+				 [
+					{"name":"lvl1", 
+					 "actionList":
+					 [
+						{"type":"variant", 
+						 "branchList":
+						 [
+							{"name":"lvl2", 
+							 "actionList":
+							 [
+								{"type":"variant", 
+								 "branchList":
+								 [
+									{"name":"lvl3", 
+									 "actionList":
+									 [
+										{
+										 "type":"communication", 
+										 "content":"MESSAGE", 
+										 "fromEntityId":0,
+										 "toEntityId":1,
+										 "margin":[0,0,0,0] 
+										}
+									 ]
+									}	
+								 ]
+								}
+							 ]
+							}	
+						 ]
+						}
+					 ]
+					}	
+				 ]
+				}
+			 ]
+		 	}	
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":2
+}

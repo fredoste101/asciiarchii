@@ -1,0 +1,10 @@
+#!/bin/bash
+
+
+#Hi. This is the "runner"
+THIS_CMD=${BASH_SOURCE[0]}
+THIS_DIR=$(dirname $THIS_CMD)
+
+
+
+python3.6 $THIS_DIR/main.py $@

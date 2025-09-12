@@ -1,0 +1,32 @@
+{
+	"name":"basicVariant12", 
+	"description": "A variant with communication wihtin between 2 entities",
+	"itemList":
+	[ 
+		{"id": 0, "type":"entity", "name":"alice", "margin":[0,0,0,0]},
+		{"id": 1, "type":"entity", "name":"bob",   "margin":[0,0,0,0]}
+   	], 
+
+	"actionList":
+	[
+		{"type":"variant", 
+		 "branchList":
+		 [
+			{"name":"topLvl", 
+			 "actionList":
+			 [
+				
+						{
+						 "type":"communication", 
+						 "content":"message", 
+						 "fromEntityId":0, 
+						 "toEntityId":1
+						}
+			 ]
+			}
+		 ]
+		}
+	],
+	"marginToFirstAction":2,
+	"marginAfterLastAction":2
+}

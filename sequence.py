@@ -341,18 +341,19 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
         Determine the relative position of variant type action.
     """
     action = variant
-    startCol = action["fromEntity"]["timeLineCol"] - action["left"] + 1 - \
-                                                     action["padding"][3] -\
-                                                     action["border"][3] -\
-                                                     action["margin"][3]
+
+    startCol = action["fromEntity"]["timeLineCol"] - action["left"]
+    endCol = action["toEntity"]["timeLineCol"] + action["right"]
                                                     
     action["startPos"]          = [startCol, row]
     action["endPos"]            = [startCol + action["size"][0], row + action["size"][1] - 1] 
     
-    #FIXME: this is wrong. no margin allowed?
-    action["borderStartPos"]    = [startCol, row]
+    borderStartCol = startCol + action["margin"][3]
+    borderEndCol   = endCol - action["margin"][1]
 
-    action["borderEndPos"]      = [startCol + action["size"][0] - 1, \
+    action["borderStartPos"]    = [borderStartCol, row]
+
+    action["borderEndPos"]      = [borderEndCol, \
                                    row + action["size"][1] - 1 - action["margin"][2]] 
 
     branchPos = copy.copy(action["startPos"])
@@ -369,18 +370,23 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
         if not isFirstBranch:
             branchContentRow += 3
             branch["branchBorderStart"] = copy.copy(branchPos) 
-            branch["branchBorderEnd"]   = [branchPos[0] + action["size"][0] - 1, 
+            branch["branchBorderStart"][0] += action["margin"][3]
+            branch["branchBorderEnd"]   = [action["borderEndPos"][0], 
                                            branchPos[1]] 
 
         branch["startPos"] = branchPos
-        contentStartPos    = [branchPos[0] + 1, branchPos[1] + 1]
+        contentStartPos    = [branchPos[0] + action["border"][3], \
+                              branchPos[1] + action["border"][0]]
 
-        #FIXME: this does not take into account margin n' shit
+        #FIXME: this does not take into account margin n' shit. NOW IT DOES. but NOT TESTED
         branch["contentStartPos"]   = copy.copy(contentStartPos)
+        branch["contentStartPos"][0] += action["margin"][3]
         branch["contentEndPos"]     = [contentStartPos[0] + len(branch["name"]) - 1, 
                                        contentStartPos[1]]
 
         branch["borderStartPos"] = copy.copy(branchPos)
+        branch["borderStartPos"][0] += action["margin"][3]
+
         branch["borderEndPos"]   = [branchPos[0] + len(branch["name"]) + 1, 
                                     branchPos[1] + 2]
         
@@ -392,12 +398,10 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
             elif branchAction["type"] == "variant":
                 determineRelativePositionOfVariantAction(sequence, branchAction, branchContentRow)
                 branchContentRow += branchAction["size"][1]
-                #fatalError(f"Type {branchAction['type']} what to do??")
 
             else:
                 determineRelativePositionOfCommunicationAction(sequence, branchAction, branchContentRow)
                 branchContentRow += branchAction["size"][1]
-                #fatalError(f"Type {branchAction['type']} not supported now")
 
 
         branchPos = copy.copy(branchPos) 
@@ -2151,7 +2155,6 @@ def setVariantSides(sequence, variant):
                 #with the name of branches b long
                 if variant["fromEntity"] == variant["toEntity"]:
                     for subBranch in branchAction["branchList"]:
-                        #FIXME: account for margin n' stuff here right? or there is none on each branch
                         subBranchContentWidth = len(subBranch["name"])
                         if (left + 1 + right - 2) < subBranchContentWidth:
                             toAdd = subBranchContentWidth - (left + 1 + right - 2)
@@ -2204,8 +2207,9 @@ def setVariantSides(sequence, variant):
     #So in essence, left is where this should start left side, 
     #and right where it shall start right side.
     #and by start I mean where the inner element ends + 1
-    variant["left"]    = left + 1
-    variant["right"]   = right + 1
+    #and also to clarify, its left of middleCol of fromEntity, and right from middleCol toEntity...
+    variant["left"]    = left  + variant["border"][3] + variant["margin"][3] + variant["padding"][3]
+    variant["right"]   = right + variant["border"][1] + variant["margin"][1] + variant["padding"][1] 
 
 
     #print(f"left: {variant['left']} | | | {variant['right']} ")

@@ -17,7 +17,17 @@ def prepareCLIArguments():
                  "Configuration is done with json.\nglhf" \
                  "\n\n--- generated usage ---"
 
-    usageExamplesString = "aa --file mySequence.json --display"
+    usageExamplesString = "Stop it. Get some help:\n" \
+                          "aa --help\n\n" \
+\
+                          "Simply display the graph to stdout:\n" \
+                          "aa --file mySequence.json --display\n\n" \
+\
+                          "Save the resulting json and ascii graph in two separate file:\n" \
+                          "aa --file inputSequence.json --jsonOut outputSequence.json --sequenceOut sequence.txt\n\n" \
+\
+                          "Get a json-syntax description with examples:\n" \
+                          "aa --getInputSyntax"
 
     epilogString = "\n\n--- Epilog ---\n\nNB: PRE BETA VERSION.\nuse at own discretion." \
                    "\n\n--- Example usages ---\n\n" \
@@ -52,6 +62,16 @@ def prepareCLIArguments():
     return argParser
 
 
+def displayGraph(sequence):
+    """
+        Print the graph to stdout
+    """
+
+    graphString = seq.getSequenceGraph(sequence) 
+
+    print(graphString)
+
+
 def main():
     """
         The main CLI entry point
@@ -75,8 +95,11 @@ def main():
 
     sequence = seq.generateSequence(config)
 
+
     if cliArgs.jsonOut:
         with open(cliArgs.jsonOut, "w") as jsonFile:
+            #Must remove all circular dependencies before jsonify it...
+            seq.removeCircularDependencies(sequence)
             jsonFile.write(json.dumps(sequence, indent=1))
 
     if cliArgs.display:
@@ -86,15 +109,6 @@ def main():
         with open(cliArgs.sequenceOut, "w") as sequenceFile:
             sequenceFile.write(seq.getSequenceGraph(sequence))
 
-
-def displayGraph(sequence):
-    """
-        Print the graph to stdout
-    """
-
-    graphString = seq.getSequenceGraph(sequence) 
-
-    print(graphString)
 
 
 if __name__ == "__main__":

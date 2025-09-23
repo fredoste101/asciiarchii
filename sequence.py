@@ -34,6 +34,26 @@ def setStyle(e):
         e["padding"] = [0,0,0,0]
 
 
+def addCoord(thing, x, y, name):
+    """
+        Add a coordinate to be colored with name.
+        So in essence: thing[name] will have x and y added,
+        to color it later :) and maybe more than color in future. who knows.
+    """
+    if len(thing[name]) == 0:
+        thing[name].append([[x,y], [x+1,y]])
+
+    else:
+        previousCoordinate = thing[name][-1]
+        if previousCoordinate[1][0] == x:
+            #Merge with previous
+            previousCoordinate[1][0] = x + 1
+
+        else:
+            #Cannot merge, new entry!
+            thing[name].append([[x,y], [x+1,y]])
+
+
 def determineHeightsOfHeader(itemList):
     """
         Aight, then this will determine the heights of the top row.
@@ -133,6 +153,32 @@ def setEntityPos(entity, pos):
 
     entity["borderEndPos"][1] = endY - entity["margin"][2]
 
+    #The border coordinates are used by vim to color the borders.
+    #The syntax is: [[[x0, y0], [x1, y1]], ....]
+    #That is, a list of lists, with two coordinates: start coord, and end coord for coloring.
+    #This is because we can color many chars on one line, but I don't think we can color columns? or can we?
+    #Also, we must add 1 to ending x, since it is exclusive [startX, endX)
+
+    borderCoordinates = [
+                            [
+                                entity["borderStartPos"], 
+                                [entity["borderEndPos"][0] + 1, entity["borderStartPos"][1]]
+                            ],
+                            [
+                                [entity["borderStartPos"][0], entity["borderEndPos"][1]], 
+                                [entity["borderEndPos"][0]+1, entity["borderEndPos"][1]]]
+                        ]
+
+
+    x1 = entity["borderStartPos"][0]
+    x2 = entity["borderEndPos"][0]
+
+    for y in range(entity["borderStartPos"][1]+1, entity["borderEndPos"][1]):
+        borderCoordinates.append([[x1, y], [x1+1, y]])
+        borderCoordinates.append([[x2, y], [x2+1, y]])
+
+    entity["borderCoordinateList"] = borderCoordinates
+
 
     #Content 
 
@@ -149,9 +195,6 @@ def setEntityPos(entity, pos):
     #Only allow one line names now
     entity["contentEndPos"][1] = entity["contentStartPos"][1] 
 
-    #A bit unclear how to jump ahead here though....
-    #pos = [pos[0] + entity["totalSize"][0], pos[1] + entity["totalSize"][1]]
-    #pos = [pos[0] + entity["totalSize"][0], pos[1] + entity["totalSize"][1]]
 
     return [entity["size"][0], entity["size"][1]]
 
@@ -331,10 +374,6 @@ def determineRelativePositionOfCommunicationAction(sequence, communication, row)
     
     [e1, e2] = getFromAndToEntities(sequence, fromEntity["id"], toEntity["id"]) 
 
-    #print(f"cc {getEntityCC(sequence, e1, e2)}")
-    #print(f"comm: {communication['content']} width: {communication['size'][0]} starts at {communication['lineStartPos']} - {communication['lineEndPos']}")
-
-
 
 def determineRelativePositionOfVariantAction(sequence, variant, row):
     """
@@ -342,8 +381,11 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
     """
     action = variant
 
-    startCol = action["fromEntity"]["timeLineCol"] - action["left"]
-    endCol = action["toEntity"]["timeLineCol"] + action["right"]
+    fromEntity = getEntityWithId(sequence, action["fromEntityId"])
+    toEntity = getEntityWithId(sequence, action["toEntityId"])
+
+    startCol = fromEntity["timeLineCol"] - action["left"]
+    endCol   = toEntity["timeLineCol"] + action["right"]
                                                     
     action["startPos"]          = [startCol, row]
     action["endPos"]            = [startCol + action["size"][0], row + action["size"][1] - 1] 
@@ -464,7 +506,6 @@ def determineRelativePositions(sequence):
 
 
         TODO: add relative offset to both x and y
-        
     """
 
     pos = [0,0]
@@ -482,48 +523,77 @@ def determineRelativePositions(sequence):
 
 
 def getCharFromOnAction(action, x, y):
+    """
+        Get char from an on-action.
+        It has: borders, and content. That's it.
+    """
     if action["startPos"][1] <= y <= action["endPos"][1] and \
        action["startPos"][0] <= x < action["endPos"][0]:
         if y <= action["contentStartPos"][1] and y >= action["contentEndPos"][1]:
             if x >= action["contentStartPos"][0] and x <= action["contentEndPos"][0]:
                 debugPrint(f"{action['contentStartPos']} {action['contentEndPos']}")
                 c = action["content"][x - action["contentStartPos"][0]]
+                addCoord(action, x, y, "contentCoordinateList")
                 return [True, c]      
 
         #Border:
         r = getBorderChar(action, x, y)
 
         if r[0]:
+            addBorderCoordinate(action, x, y)
             return r 
 
     #This is a hack to overwrite the | from the middleCol when padding is used
-    # IE everything within borders that is not content, is " "
+    # IE everything within borders that is not content, is " ". I think this is a reasonable hack (Y)
     if action["borderStartPos"][1] < y < action["borderEndPos"][1] and \
        action["borderStartPos"][0] < x < action["borderEndPos"][0]:
         return [True, " "]
-
-        
 
     return [False, False]
 
 
 def getCharFromCommunicationAction(action, x, y):
+    """
+        Get char from communication action.
+        It has content, and a line with an arrow on it. That's it :)
+    """
     if [x, y] == action["arrowPos"]:
+        #Put this as same color for now.
+        addCoord(action, x, y, "lineCoordinateList")
         return [True, action["arrowChar"]]
     
     if y == action["lineStartPos"][1] and x >= action["lineStartPos"][0] and x <= action["lineEndPos"][0]:
+        addCoord(action, x, y, "lineCoordinateList")
         return [True, "-"]
 
     if y <= action["contentStartPos"][1] and y >= action["contentEndPos"][1]:
         if x >= action["contentStartPos"][0] and x <= action["contentEndPos"][0]:
             debugPrint(f"DEBUG: {action['contentStartPos']} {action['contentEndPos']}")
             c = action["content"][x - action["contentStartPos"][0]]
+            addCoord(action, x, y, "contentCoordinateList")
+            return [True, c]      
+
+    return [False, False]
+
+
+def getContentChar(item, x, y):
+    if y <= item["contentStartPos"][1] and y >= item["contentEndPos"][1]:
+        if x >= item["contentStartPos"][0] and x <= item["contentEndPos"][0]:
+            debugPrint(f"{item['contentStartPos']} {item['contentEndPos']}")
+
+            charIndex = x - item["contentStartPos"][0]
+
+            c = item["name"][charIndex]
+            addCoord(item, x, y, "contentCoordinateList")
             return [True, c]      
 
     return [False, False]
 
 
 def getCharFromVariantAction(action, x, y):
+    """
+        
+    """
     if (action["startPos"][0] <= x <= action["endPos"][0]) and (action["startPos"][1] <= y <= action["endPos"][1]):
 
         #First check the inner stuff
@@ -534,6 +604,7 @@ def getCharFromVariantAction(action, x, y):
             
             r = getBorderChar(branch, x, y)
             if r[0]:
+                addCoord(action, x, y, "borderCoordinateList")
                 return r
 
             for branch in action["branchList"]:
@@ -553,7 +624,7 @@ def getCharFromVariantAction(action, x, y):
                         if r[0]:
                             return r
                     else:
-                        fatalError("this should have been caught earlier... type {branchAction['type']} is illegal")
+                        fatalError(f"this should have been caught earlier... type {branchAction['type']} is illegal")
 
                 if "branchBorderStart" in branch:
                     if y == branch["branchBorderStart"][1]:
@@ -568,6 +639,7 @@ def getCharFromVariantAction(action, x, y):
         r = getBorderChar(action, x, y)
 
         if r[0]:
+            addCoord(action, x, y, "borderCoordinateList")
             return r
 
     return [False, False]
@@ -599,74 +671,159 @@ def getCharFromAction(action, x, y):
     return [False, False]
 
 
+def getCharFromItem(item, x, y):
+    """
+        Get a char from an item.
+
+        If a char is found, will return:
+        [True, <char>]
+
+        else it returns:
+        [False, False]
+
+
+        I.E, if the item has a char that it wants to display on coords:
+
+        [x, y]
+
+        then it will return this char, otherwise it will return False :)
+    """
+
+    if item["type"] == "entity":
+        r = getContentChar(item, x, y)
+        if r[0]:
+            return r
+
+        r = getBorderChar(item, x, y)
+
+        if r[0]:
+            return r 
+    
+    elif item["type"] == "container":
+        r = getContentChar(item, x, y)
+        if r[0]:
+            return r
+
+        r = getBorderChar(item, x, y)
+
+        if r[0]:
+            addBorderCoordinate(item, x, y)
+            return r 
+
+        for subItem in item["itemList"]:
+            r = getCharFromItem(subItem, x, y)
+            if r[0]:
+                return r
+
+    else:
+        fatalError(f"Unknown type: {item['type']}")
+
+    return [False, False]
+
+
+def getCharFromHeader(sequence, x, y):
+    """
+        Get char from header. this is nice.
+
+        Returns [returnCode, char]
+
+        if returnCode is True, a char has been found (on given coordinates),
+        else it will be False.
+
+    """
+
+    char = None
+    isCharFound = False
+
+    if y < sequence["headerHeight"]:
+
+        #timeLine can be in header as well, if there are containers
+        #but timeLine takes precedence over container
+        for timeLine in sequence["timeLineList"]:   
+            if y >= timeLine["rowStart"]: 
+                if x == timeLine["column"]:
+                    isCharFound = True
+                    char = "|"
+                    entity = getEntityWithId(sequence, timeLine["entityId"])
+                    entity["timeLineCoordinateList"].append([x, y])
+                    break
+            
+        if isCharFound:
+            return [True, char]
+
+        for item in sequence["itemList"]:
+            if y in range(item["startPos"][1], item["size"][1]):
+                [rc, char] = getCharFromItem(item, x, y)
+                if rc:
+                    debugPrint(f"{char} on {y} {x}")
+                    isCharFound = True
+                    break
+            
+        if isCharFound:
+            return [True, char]
+
+    return [False, False]
+
+
 def getSequenceGraph(sequence):
     """
         Get the sequence graph as a string
+
+        Due to poor intellectual capacity,
+        this must be run also in order to determine where the middle columns will be,
+        and thus save these values in their corresponding entities,
+        so we can color them in vim... not very nice, but it is what it is
+
+        And also to be able to color the containers properly, since they overlap with timeLines...
     """
 
     graphStringListList = []
     
-    for rowNumber in range(sequence["height"]):
+    for y in range(sequence["height"]):
         graphStringList = []
 
-        for colNumber in range(sequence["width"]):
+        for x in range(sequence["width"]):
+
+            #Get char from header
+
+            [rc, c] = getCharFromHeader(sequence, x, y)
+
+            if rc:
+                graphStringList.append(c)
+                continue
+
+            #Check for action
 
             isCharFound = False
 
-            if rowNumber < sequence["headerHeight"]:
+            for action in sequence["actionList"]:
+                [rc, c] = getCharFromAction(action, x, y)
+                if rc:
+                    graphStringList.append(c) 
+                    isCharFound = True
+                    break
+                pass
 
-                #timeLine can be in header as well, if there are containers
-                #but timeLine takes precedence over container
-                for timeLine in sequence["timeLineList"]:   
-                    if rowNumber >= timeLine["rowStart"]: 
-                        if colNumber == timeLine["column"]:
-                            isCharFound = True
-                            graphStringList.append("|") 
-                            break
-                    
-                if isCharFound:
-                    continue
+            if isCharFound:
+                continue
 
-                for i in sequence["itemList"]:
-                    if rowNumber in range(i["startPos"][1], i["size"][1]):
-                        [rc, c] = getCharFromItem(i, colNumber, rowNumber)
-                        if rc:
-                            debugPrint(f"{c} on {rowNumber} {colNumber}")
-                            graphStringList.append(c) 
-                            isCharFound = True
-                            break
-                    
-                if isCharFound:
-                    continue
-
-            else:
-                #Check for action
-
-                for action in sequence["actionList"]:
-                    [rc, c] = getCharFromAction(action, colNumber, rowNumber)
-                    if rc:
-                        graphStringList.append(c) 
+            #TimeLines
+            for timeLine in sequence["timeLineList"]:   
+                if y >= timeLine["rowStart"]: 
+                    if x == timeLine["column"]:
+                        #Must match this timeLine to a entity,
+                        #and add the coords in the entities timeLineCoordinateList
                         isCharFound = True
+                        graphStringList.append("|") 
+                        entity = getEntityWithId(sequence, timeLine["entityId"])
+                        entity["timeLineCoordinateList"].append([x, y])
+                        
                         break
-                    pass
 
-                if isCharFound:
-                    continue
-
-                #TimeLines
-                for timeLine in sequence["timeLineList"]:   
-                    if rowNumber >= timeLine["rowStart"]: 
-                        if colNumber == timeLine["column"]:
-                            isCharFound = True
-                            graphStringList.append("|") 
-                            break
-
-                if isCharFound:
-                    continue
-
+            if isCharFound:
+                continue
 
             graphStringList.append(" ") 
-
         
         graphString = "".join(graphStringList)
 
@@ -678,19 +835,6 @@ def getSequenceGraph(sequence):
 GLOBAL_BORDER_CORNER     = "+"
 GLOBAL_BORDER_VERTICAL   = "|"
 GLOBAL_BORDER_HORIZONTAL = "-"
-
-
-def getContentChar(item, x, y):
-    if y <= item["contentStartPos"][1] and y >= item["contentEndPos"][1]:
-        if x >= item["contentStartPos"][0] and x <= item["contentEndPos"][0]:
-            debugPrint(f"{item['contentStartPos']} {item['contentEndPos']}")
-
-            charIndex = x - item["contentStartPos"][0]
-
-            c = item["name"][charIndex]
-            return [True, c]      
-
-    return [False, False]
 
 
 def getBorderChar(item, x, y):
@@ -734,53 +878,11 @@ def getBorderChar(item, x, y):
     return [False, False]
 
 
-def getCharFromItem(item, x, y):
+def addBorderCoordinate(thing, x, y):
     """
-        Get a char from an item.
-
-        If a char is found, will return:
-        [True, <char>]
-
-        else it returns:
-        [False, False]
-
-
-        I.E, if the item has a char that it wants to display on coords:
-
-        [x, y]
-
-        then it will return this char, otherwise it will return False :)
+        Add x and y to borderCoordinateList in an appropriate way, Y R u geh.
     """
-
-    if item["type"] == "entity":
-        r = getContentChar(item, x, y)
-        if r[0]:
-            return r
-
-        r = getBorderChar(item, x, y)
-
-        if r[0]:
-            return r 
-    
-    elif item["type"] == "container":
-        r = getContentChar(item, x, y)
-        if r[0]:
-            return r
-
-        r = getBorderChar(item, x, y)
-
-        if r[0]:
-            return r 
-
-        for subItem in item["itemList"]:
-            r = getCharFromItem(subItem, x, y)
-            if r[0]:
-                return r
-
-    else:
-        fatalError(f"Unknown type: {item['type']}")
-
-    return [False, False]
+    addCoord(thing, x, y, "borderCoordinateList")
 
 
 def addTimeLines(sequence):
@@ -793,15 +895,15 @@ def addTimeLines(sequence):
 
     timeLineList = []
 
-    for i in sequence["entityList"]:
-        if i["type"] == "entity":
+    for entity in sequence["entityList"]:
+        if entity["type"] == "entity":
             #Middle of the entity in terms of border, I.E size without margin
-            middleOfEntity = i["borderStartPos"][0] + int((i["borderEndPos"][0] - i["borderStartPos"][0]) / 2) 
-            oneBelowEntity = i["borderEndPos"][1] + 1
+            middleOfEntity = entity["borderStartPos"][0] + int((entity["borderEndPos"][0] - entity["borderStartPos"][0]) / 2) 
+            oneBelowEntity = entity["borderEndPos"][1] + 1
 
-            timeLineList.append({"column":middleOfEntity, "rowStart":oneBelowEntity})
+            timeLineList.append({"column":middleOfEntity, "rowStart":oneBelowEntity, "entityId":entity["id"]})
 
-            i["timeLineCol"] = middleOfEntity
+            entity["timeLineCol"] = middleOfEntity
             
     sequence["timeLineList"] = timeLineList 
         
@@ -1444,7 +1546,7 @@ def resizeByVariantSingleEntity(sequence, variant):
         If R is outside of e, then we increase right-padding for e. 
     """
 
-    entity = variant["toEntity"]
+    entity = getEntityWithId(sequence, variant["toEntityId"])
 
     #Check if variant content can fit at all
 
@@ -1506,7 +1608,6 @@ def getEntityRight(entity):
     """
     contentLenRight = int(len(entity["name"]) / 2)
 
-
     return contentLenRight + entity["border"][1] + entity["padding"][1] + entity["margin"][1]
 
 
@@ -1566,13 +1667,11 @@ def resizeByVariantManyEntitites(sequence, variant):
         Aight. What are we trying to accomplish here...?
     """
 
-    #fatalError("resize variant many entities")
-
     #Check if we need to add anything to the entity because of 
     #sides
 
-    fromEntity = variant["fromEntity"]
-    toEntity = variant["toEntity"]
+    fromEntity = getEntityWithId(sequence, variant["fromEntityId"])
+    toEntity = getEntityWithId(sequence, variant["toEntityId"])
 
     [entityLeft, _] = getEntitySides(fromEntity)
     [_, entityRight] = getEntitySides(toEntity)
@@ -1667,7 +1766,7 @@ def resizeByVariant(sequence, variant):
             if branchAction["type"] == "variant":
                 resizeByVariant(sequence, branchAction)
 
-    if variant["fromEntity"] == variant["toEntity"]:
+    if variant["fromEntityId"] == variant["toEntityId"]:
         resizeByVariantSingleEntity(sequence, variant)
 
     else:
@@ -1957,6 +2056,7 @@ def initializeEntityList(sequence):
 
         Each entity gets a reference to the next and previous entity.
         This is retarded, since you should be able to just traverse the list... anyways...
+        No its not retarded. You can be the retarded. This is beautiful.
     """
     entityList = []
 
@@ -2004,6 +2104,7 @@ def initializeEntities(sequence):
     initializeHierarchy(sequence["itemList"])
 
     initializeEntityList(sequence)
+    
 
 
 def getFirstEntityInSet(sequence, s):
@@ -2013,7 +2114,7 @@ def getFirstEntityInSet(sequence, s):
     """
     for i in sequence["entityList"]:
         if i["id"] in s:
-            return i
+            return i["id"]
 
     fatalError(f"Could not get any entity with id in set: {s}")
 
@@ -2025,7 +2126,7 @@ def getLastEntityInSet(sequence, s):
     """
     for i in sequence["entityList"][::-1]:
         if i["id"] in s:
-            return i
+            return i["id"]
 
     fatalError(f"Could not get any entity with id in set: {s}")
 
@@ -2056,8 +2157,8 @@ def setStartAndEndEntityForVariant(sequence, variant):
             if branchAction["type"] == "variant":
                 setStartAndEndEntityForVariant(sequence, branchAction)
     
-                entityIdSet.add(branchAction["fromEntity"]["id"])
-                entityIdSet.add(branchAction["toEntity"]["id"])
+                entityIdSet.add(branchAction["fromEntityId"])
+                entityIdSet.add(branchAction["toEntityId"])
 
             elif branchAction["type"] == "on":
                 entityIdSet.add(branchAction["entityId"])
@@ -2069,8 +2170,8 @@ def setStartAndEndEntityForVariant(sequence, variant):
             else:
                 fatalError(f"type {branchAction['type']}")
     
-    variant["fromEntity"] = getFirstEntityInSet(sequence, entityIdSet)
-    variant["toEntity"]   = getLastEntityInSet(sequence, entityIdSet)
+    variant["fromEntityId"] = getFirstEntityInSet(sequence, entityIdSet)
+    variant["toEntityId"]   = getLastEntityInSet(sequence, entityIdSet)
 
     #print(f"from: {variant['fromEntity']['name']} <-> {variant['toEntity']['name']}")
 
@@ -2139,13 +2240,13 @@ def setVariantSides(sequence, variant):
         for branchAction in branch["actionList"]:
             if branchAction["type"] == "variant":
 
-                [vLeft, vRight, leftEntity, rightEntity] = setVariantSides(sequence, branchAction)
+                [vLeft, vRight, leftEntityId, rightEntityId] = setVariantSides(sequence, branchAction)
 
-                if leftEntity == variant["fromEntity"]:
+                if leftEntityId == variant["fromEntityId"]:
                     if vLeft > left:
                         left = vLeft
 
-                if rightEntity == variant["toEntity"]:
+                if rightEntityId == variant["toEntityId"]:
                     if vRight > right:
                         right = vRight
 
@@ -2153,7 +2254,7 @@ def setVariantSides(sequence, variant):
 
                 #If we are on single entity, need to expand our left and right when we go hard or go home
                 #with the name of branches b long
-                if variant["fromEntity"] == variant["toEntity"]:
+                if variant["fromEntityId"] == variant["toEntityId"]:
                     for subBranch in branchAction["branchList"]:
                         subBranchContentWidth = len(subBranch["name"])
                         if (left + 1 + right - 2) < subBranchContentWidth:
@@ -2168,8 +2269,8 @@ def setVariantSides(sequence, variant):
 
                 [onLeft, onRight] = getOnActionSides(branchAction)
 
-                if variant["fromEntity"] == variant["toEntity"]:
-                    if branchAction["entityId"] == variant["fromEntity"]["id"]:
+                if variant["fromEntityId"] == variant["toEntityId"]:
+                    if branchAction["entityId"] == variant["fromEntityId"]:
 
                         if onLeft > left:
                             left = onLeft
@@ -2177,11 +2278,11 @@ def setVariantSides(sequence, variant):
                         if onRight > right:
                             right = onRight
 
-                elif branchAction["entityId"] == variant["fromEntity"]["id"]:
+                elif branchAction["entityId"] == variant["fromEntityId"]:
                     if onLeft > left:
                         left = onLeft
 
-                elif branchAction["entityId"] == variant["toEntity"]["id"]:
+                elif branchAction["entityId"] == variant["toEntityId"]:
                     if onRight > right:
                         right = onRight
 
@@ -2215,7 +2316,7 @@ def setVariantSides(sequence, variant):
     #print(f"left: {variant['left']} | | | {variant['right']} ")
     #print(f"{variant['margin']} {variant['border']} {variant['padding']}")
 
-    return [variant["left"], variant["right"], variant["fromEntity"], variant["toEntity"]]
+    return [variant["left"], variant["right"], variant["fromEntityId"], variant["toEntityId"]]
 
 
 def setVariantStyle(variant):
@@ -2340,33 +2441,196 @@ def determineHeightOfSequence(sequence):
     sequence["height"] = totalHeight
 
 
-def createContentList(sequence):
+def initializeContainerVim(container):
     """
-        What does this do??
-
-        It creates the vim interactive thing I think
-
-        TODO: change name of this function to tell wtf it does
-
+        Aight, so need to initialize container here,
+        but to fill in we need to generate the graph....
+        A sadness I cannot overcome easily
     """
+    container["borderCoordinateList"] = [] #This 2 must be filled when displaying graph because of timeLine overlapping...
+    container["contentCoordinateList"] = [] #Where content exists are placed
 
-    commandList = []
+    for subItem in container["itemList"]:
+        if subItem["type"] == "container":
+            initializeContainerVim(subItem)
+    
 
-    for i in sequence["entityList"]:
-        if "jumpCmd" in i:
-            jump = {"cmd":i["jumpCmd"], "startCoord":i["contentStartPos"], "endCoord":i["contentEndPos"]}
-            commandList.append(jump)
+def initializeActionVim(action):
+    if "vim" not in action:
+        action["vim"] = {}
 
-    for a in sequence["actionList"]:
-        if a["type"] == "on":
-            pass
+    action["contentCoordinateList"] = [] #Where content exists are placed
+
+    if action["type"] == "variant":
+        action["borderCoordinateList"] = []
+        for branch in action["branchList"]:
+            branch["borderCoordinateList"] = []
+            branch["contentCoordinateList"] = [] #Where content exists are placed
+            for branchAction in branch["actionList"]:
+                initializeActionVim(branchAction)
+
+    elif action["type"] == "on":
+        action["borderCoordinateList"] = []
+
+    elif action["type"] == "communication":
+        #Aight, this is bit unique (stupid).
+        action["lineCoordinateList"] = []
         
-        elif a["type"] == "communication":
-            if "jumpCmd" in a:
-                jump = {"cmd":a["jumpCmd"], "startCoord":a["contentStartPos"], "endCoord":a["contentEndPos"]}
-                commandList.append(jump)
 
-    sequence["cmdList"] = commandList
+def initializeVim(sequence):
+    """
+        Initialize the vim-attribute for every entity (should be for every type of thing later...) 
+        Also, should be made sort of optional?
+    """
+    for entity in sequence["entityList"]:
+        if "vim" not in entity:
+            entity["vim"] = {}
+        entity["borderCoordinateList"] = [] #Where borders are placed
+        entity["contentCoordinateList"] = [] #Where content exists are placed
+        entity["timeLineCoordinateList"] = [] #Where time line exists
+
+    for item in sequence["itemList"]:
+        if item["type"] == "container":
+            initializeContainerVim(item)
+
+
+    for action in sequence["actionList"]:
+        initializeActionVim(action) 
+
+
+def removeCircularDependenciesContainer(container):
+    """
+        Remove all references to other elements of this container,
+        recursively
+    """
+    container["nextSibling"]            = None
+    container["previousSibling"]        = None
+    container["nextEntitySibling"]      = None
+    container["previousEntitySibling"]  = None
+    container["parent"] = None
+
+    for item in container["itemList"]:
+        if item["type"] == "entity":
+            item["nextSibling"]     = None
+            item["previousSibling"] = None
+            item["parent"] = None
+            
+        elif item["type"] == "container":
+            removeCircularDependenciesContainer(item)
+    
+
+def removeCircularDependencies(sequence):
+    """
+        This is needed to be able to json-encode the sequence in the end.
+    """
+    for item in sequence["itemList"]:
+        if item["type"] == "entity":
+            item["nextSibling"]     = None
+            item["previousSibling"] = None
+            item["nextEntitySibling"] = None
+            item["previousEntitySibling"] = None
+            item["parent"] = None
+
+        elif item["type"] == "container":
+            removeCircularDependenciesContainer(item)
+
+
+def applyFunctionOnItem(sequence, item, function):
+    """
+        Apply function on item. If item is container, 
+        apply function recursively on children.
+    """
+
+    #Call the function
+    function(sequence, item)
+
+    if item["type"] == "variant":
+        for subItem in item["itemList"]:
+            applyFunctionOnItem(sequence, subItem, function)
+
+
+def applyFunctionOnAllItems(sequence, function):
+    for item in sequence["itemList"]:
+        applyFunctionOnItem(sequence, item, function)
+
+
+def applyFunctionOnAction(sequence, action, function):
+    function(sequence, action)
+
+    if action["type"] == "variant":
+        for branch in action["branchList"]:
+            for subAction in branch["actionList"]:
+                applyFunctionOnAction(sequence, subAction, function)
+
+
+def applyFunctionOnAllActions(sequence, function):
+    for action in sequence["actionList"]:
+        applyFunctionOnAction(sequence, action, function)
+    
+
+def applyFunctionOnAllThings(sequence, function):
+    """
+        This can be used to apply a function to all entities that
+        exists.
+
+        I.E all entities, containers, action
+
+        function should be a function that expects 2 arguments:
+        the full sequence, and the 'thing'
+
+        Ex: 
+        def myFunction(sequence, thing):
+            if 'name' in thing:
+                print(thing['name'])
+    """
+    applyFunctionOnAllItems(sequence, function)
+
+    applyFunctionOnAllActions(sequence, function)
+
+
+def addCommandFromThing(sequence, thing):
+    """
+        A callback to be used in applyFunctionOnAllThings
+        so that all things with vim-commands add their commands to the
+        global vim-command-list to be used later in vim
+
+        vim is love, vim is life
+    """
+    if "vim" in thing:
+        if "commands" in thing["vim"]:
+            commands = thing["vim"]["commands"]
+            for commandTarget in commands:
+                if commandTarget == "content":
+                    for commandType in commands[commandTarget]:
+                        if commandType not in sequence["vim"]["commands"]:
+                            sequence["vim"]["commands"][commandType] = []
+
+                        commandTypeList = sequence["vim"]["commands"][commandType]
+
+                        for coords in thing["contentCoordinateList"]:
+                            commandTypeList.append((coords, commands[commandTarget][commandType]))
+                            
+                    #Must get coordinatelist from content. is already there :O                    
+                else:
+                    fatalError(f"commands of category: {commandTarged} NOT SUPPORTED")
+
+
+def initializeVimCommands(sequence):
+    """
+        build a global vim-field (if not exists) and fill with commands
+        from all 'things'.
+
+        Reason for this is to not have vim loop through all 'things'
+        every time a command is done...
+    """
+
+    if "vim" not in sequence:
+        sequence["vim"] = {}
+
+    if "commands" not in sequence["vim"]:
+        sequence["vim"]["commands"] = {} 
+
+    applyFunctionOnAllThings(sequence, addCommandFromThing)
 
 
 def generateSequence(config):
@@ -2403,6 +2667,8 @@ def generateSequence(config):
 
     initializeActions(sequence)
 
+    initializeVim(sequence)
+
     resizeItemWidth(sequence)
 
     determineWidthOfSequence(sequence)
@@ -2411,7 +2677,14 @@ def generateSequence(config):
 
     determineHeightOfSequence(sequence)
 
-    createContentList(sequence)
+    #Must call this, to vimify the json-output... it sucks, but its sexy.
+    getSequenceGraph(sequence)    
 
+    #Now we have built: contentCoordinateList (for example) in setSequenceGraph...
+    #Lets build the commands 
+    initializeVimCommands(sequence)
 
     return sequence
+
+
+

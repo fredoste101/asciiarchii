@@ -5,7 +5,6 @@
 Create sequence flows in ascii,
 by using JSON-input
 
-
 At least that's the main idea.
 Also get some meta data to feed vim to later be able
 to connect the sequence flow to code.
@@ -235,6 +234,23 @@ An example of a variant with 2 branches:
 See the file inputSyntax.txt in the same directory as this :)
 
 
+=== VIM ===
+How do we link the sequence to vim?
+By using special json-attributes, 
+we can create:
+colors when opening the sequence in vim,
+and
+create (custom) commands to be run at certain conditions.
+
+This section needs mopped. 
+Mabye even a separate .txt-file with some descriptions in it.
+
+Yeah, well I need to explain the commands at least.
+It might not be super intuitive for someone else I suppose.
+To be hones its not intuitive to me either... but its pretty nice.
+
+
+
 === TODO LIST ===
 Things that I want to do to increase functionality
 
@@ -242,10 +258,6 @@ Things that I want to do to increase functionality
 * Much friendlier help-page when doing --help
   Also a tourough[sic] explantion of how json should be structured.
   Both a generalized explanation and examples.
-
-
-* syntax highlighting within vim
-  This should be trivial... glhf
 
 
 *Sender received for communications. 

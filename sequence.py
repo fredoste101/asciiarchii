@@ -2507,13 +2507,15 @@ def removeCircularDependenciesContainer(container):
     container["previousSibling"]        = None
     container["nextEntitySibling"]      = None
     container["previousEntitySibling"]  = None
-    container["parent"] = None
+    container["parent"]                 = None
 
     for item in container["itemList"]:
         if item["type"] == "entity":
-            item["nextSibling"]     = None
-            item["previousSibling"] = None
-            item["parent"] = None
+            item["nextSibling"]             = None
+            item["previousSibling"]         = None
+            item["nextEntitySibling"]       = None
+            item["previousEntitySibling"]   = None
+            item["parent"]                  = None
             
         elif item["type"] == "container":
             removeCircularDependenciesContainer(item)
@@ -2525,11 +2527,11 @@ def removeCircularDependencies(sequence):
     """
     for item in sequence["itemList"]:
         if item["type"] == "entity":
-            item["nextSibling"]     = None
-            item["previousSibling"] = None
-            item["nextEntitySibling"] = None
-            item["previousEntitySibling"] = None
-            item["parent"] = None
+            item["nextSibling"]             = None
+            item["previousSibling"]         = None
+            item["nextEntitySibling"]       = None
+            item["previousEntitySibling"]   = None
+            item["parent"]                  = None
 
         elif item["type"] == "container":
             removeCircularDependenciesContainer(item)

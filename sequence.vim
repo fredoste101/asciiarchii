@@ -6,7 +6,7 @@
 "and add commands to be used on different components
 
 
-function ExecuteCommandOnCoord(commandName)
+function! ASCIIARCHII_ExecuteCommandOnCoord(commandName)
 	"Execute a command with commandName = watevs. set in
 	"vim -> commands -> <target> -> <cmd> 
 	"Depending on where we are, and also if the command is defined
@@ -47,7 +47,7 @@ function ExecuteCommandOnCoord(commandName)
 endfunction
 
 
-function LoadSequence(fileName)
+function! ASCIIARCHII_LoadSequence(fileName)
 	"Load in the sequence. It will be stored in a global variable
 	"Not very nice solution, but hey...    just hey.
 	
@@ -56,7 +56,7 @@ function LoadSequence(fileName)
 endfunction
 
 
-function CreateHighlight(name, colorConfig)
+function! ASCIIARCHII_CreateHighlight(name, colorConfig)
 	"Apply colors found in colorConfig to highlight with name
 	"General way of applying color, hopefully :)
 
@@ -74,7 +74,7 @@ function CreateHighlight(name, colorConfig)
 endfunction
 
 
-function ApplySyntaxOnCoordinates(coordinateList, highlightName)
+function! ASCIIARCHII_ApplySyntaxOnCoordinates(coordinateList, highlightName)
 	"coordinateList is a list of coordinate lists: [[x0, y0], [x1, y0]]
 	for range in a:coordinateList 
 		
@@ -90,7 +90,7 @@ function ApplySyntaxOnCoordinates(coordinateList, highlightName)
 endfunction
 
 
-function ApplyTimeLineColor(item, highlightName)
+function! ASCIIARCHII_ApplyTimeLineColor(item, highlightName)
 	"Apply the color to the timeLine for this item (entity)
 	"Note it gets the same color as border as it is called now. Not good.
 	"Should be changed
@@ -107,7 +107,7 @@ function ApplyTimeLineColor(item, highlightName)
 endfunction
 
 
-function ApplyBorderColor(item, itemVimConfig, runningItemNum)
+function! ASCIIARCHII_ApplyBorderColor(item, itemVimConfig, runningItemNum)
 	"Apply any border colors if any exists
 	
 	if has_key(a:itemVimConfig, "style")
@@ -119,16 +119,16 @@ function ApplyBorderColor(item, itemVimConfig, runningItemNum)
 			if has_key(colorConfig, "border")
 				let borderColorConfig = colorConfig["border"]
 
-				let item_border_highlight_name = "thing_" . a:runningItemNum . "_border_color"
+				let item_border_highlight_name = "ASCIIARCHII_thing_" . a:runningItemNum . "_border_color"
 
-				call CreateHighlight(item_border_highlight_name, borderColorConfig)
+				call ASCIIARCHII_CreateHighlight(item_border_highlight_name, borderColorConfig)
 
-				call ApplySyntaxOnCoordinates(a:item["borderCoordinateList"], item_border_highlight_name)
+				call ASCIIARCHII_ApplySyntaxOnCoordinates(a:item["borderCoordinateList"], item_border_highlight_name)
 
 				if has_key(a:item, "timeLineCoordinateList")
 					"Lets treat the timeLine as an extension of the border...
 					"This might not be what u want though, so it should be changed later :)
-					call ApplyTimeLineColor(a:item, item_border_highlight_name)
+					call ASCIIARCHII_ApplyTimeLineColor(a:item, item_border_highlight_name)
 				endif
 			endif
 		endif
@@ -136,7 +136,7 @@ function ApplyBorderColor(item, itemVimConfig, runningItemNum)
 endfunction
 
 
-function ApplyLineColor(thing, vimConfig, runningNum)
+function! ASCIIARCHII_ApplyLineColor(thing, vimConfig, runningNum)
 
 	if has_key(a:vimConfig, "style")
 		let styleConfig = a:vimConfig["style"]
@@ -144,31 +144,31 @@ function ApplyLineColor(thing, vimConfig, runningNum)
 		if has_key(styleConfig, "color")
 			let colorConfig = styleConfig["color"]
 			if has_key(colorConfig, "line")
-				let thing_border_highlight_name = "thing_" . a:runningNum . "_line_color"
+				let thing_border_highlight_name = "ASCIIARCHII_thing_" . a:runningNum . "_line_color"
 
 				let lineConfig = colorConfig["line"]
 
-				call CreateHighlight(thing_border_highlight_name, lineConfig)
+				call ASCIIARCHII_CreateHighlight(thing_border_highlight_name, lineConfig)
 
-				call ApplySyntaxOnCoordinates(a:thing["lineCoordinateList"], thing_border_highlight_name)
+				call ASCIIARCHII_ApplySyntaxOnCoordinates(a:thing["lineCoordinateList"], thing_border_highlight_name)
 			endif
 		endif
 	endif
 endfunction
 
 
-function ApplyVariantColor(variant, runningNum)
+function! ASCIIARCHII_ApplyVariantColor(variant, runningNum)
 	let runningNum = a:runningNum
 	if has_key(a:variant, "vim")
 		"echom Apply border to variant
-		call ApplyBorderColor(a:variant, a:variant["vim"], runningNum)
+		call ASCIIARCHII_ApplyBorderColor(a:variant, a:variant["vim"], runningNum)
 		let runningNum = runningNum + 1
 		
 	endif
 
 	for branch in a:variant["branchList"]
 		for action in branch["actionList"]
-			let runningNum = ApplyActionColor(action, runningNum)
+			let runningNum = ASCIIARCHII_ApplyActionColor(action, runningNum)
 		endfor
 	endfor
 
@@ -177,27 +177,27 @@ function ApplyVariantColor(variant, runningNum)
 endfunction
 
 
-function ApplyActionColor(action, runningNum)
+function! ASCIIARCHII_ApplyActionColor(action, runningNum)
 	let runningNum = a:runningNum
 
 	if a:action["type"] == "on"
 	
 		if has_key(a:action, "vim")
-			call ApplyBorderColor(a:action, a:action["vim"], runningNum)
+			call ASCIIARCHII_ApplyBorderColor(a:action, a:action["vim"], runningNum)
 			let runningNum = runningNum + 1
 		endif
 
 	elseif a:action["type"] == "communication"
 
 		if has_key(a:action, "vim")
-			call ApplyLineColor(a:action, a:action["vim"], runningNum)
+			call ASCIIARCHII_ApplyLineColor(a:action, a:action["vim"], runningNum)
 			let runningNum = runningNum + 1
 		endif
 
 	elseif a:action["type"] == "variant"
 
 		if has_key(a:action, "vim")
-			let runningNum = ApplyVariantColor(a:action, runningNum)
+			let runningNum = ASCIIARCHII_ApplyVariantColor(a:action, runningNum)
 		endif
 	
 	
@@ -208,7 +208,7 @@ function ApplyActionColor(action, runningNum)
 endfunction
 
 
-function ApplyItemColor(item, runningItemNum)
+function! ASCIIARCHII_ApplyItemColor(item, runningItemNum)
 
 	let item = a:item
 
@@ -217,13 +217,13 @@ function ApplyItemColor(item, runningItemNum)
 	if has_key(item, "vim")
 		let itemVimConfig = item["vim"]	
 
-		call ApplyBorderColor(item, itemVimConfig, runningItemNum)
+		call ASCIIARCHII_ApplyBorderColor(item, itemVimConfig, runningItemNum)
 		let runningItemNum += 1
 	endif
 
 	if a:item["type"] == "container"
 		for subItem in a:item["itemList"]	
-			let runningItemNum = ApplyItemColor(subItem, runningItemNum)
+			let runningItemNum = ASCIIARCHII_ApplyItemColor(subItem, runningItemNum)
 		endfor
 	endif
 
@@ -232,26 +232,26 @@ function ApplyItemColor(item, runningItemNum)
 endfunction
 
 
-function ApplyColor()
+function! ASCIIARCHII_ApplyColor()
 	let runningNum = 0
 	for item in g:sequence["itemList"]
-		let runningNum = ApplyItemColor(item, runningNum)
+		let runningNum = ASCIIARCHII_ApplyItemColor(item, runningNum)
 	endfor
 
 	for action in g:sequence["actionList"]
-		call ApplyActionColor(action, runningNum)
+		call ASCIIARCHII_ApplyActionColor(action, runningNum)
 	endfor
 endfunction
 
 
-function ApplyStyle()
+function! ASCIIARCHII_ApplyStyle()
 	"Yesh (sean connery yes) its pretty empty as of now since we only gots
 	"the color...
-	call ApplyColor()
+	call ASCIIARCHII_ApplyColor()
 endfunction
 
 
-function InitializeCommands()
+function! ASCIIARCHII_InitializeCommands()
 	"Initialize commands
 	"well. idea is to get all commands in sequence[vim][commands]
 	"and then create a mapping for it to be used. Can it be smart? yesn't 
@@ -261,7 +261,7 @@ function InitializeCommands()
 
 		if has_key(vimConfig, "commands")
 			for cmd in keys(vimConfig["commands"])
-				execute "nnoremap <buffer> <leader>" . cmd . " :call ExecuteCommandOnCoord(\"" . cmd . "\")<CR>"
+				execute "nnoremap <buffer> <leader>" . cmd . " :call ASCIIARCHII_ExecuteCommandOnCoord(\"" . cmd . "\")<CR>"
 			endfor
 		endif
 	endif
@@ -269,15 +269,16 @@ function InitializeCommands()
 endfunction
 
 
-function InitializeVimSequence(fileName)
+function! ASCIIARCHII_InitializeVimSequence(fileName)
 	"Initialize the sequence by loading the json-file,
 	"applying style and initializing commands.
 
-	call LoadSequence(a:fileName)
+	call ASCIIARCHII_LoadSequence(a:fileName)
 
-	call ApplyStyle()
+	call ASCIIARCHII_ApplyStyle()
 
-	call InitializeCommands()
+	call ASCIIARCHII_InitializeCommands()
+
 
 	"To make gg go to same column at first row when jumping back and
 	"forth. Its really nice.

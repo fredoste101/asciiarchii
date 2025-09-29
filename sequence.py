@@ -17,6 +17,7 @@ _doDebuggingPrints = False
 _debuggingTypesEnabled = set() 
 
 
+
 def setDebuggingTypesEnabled(typesEnabled):
     _debuggingTypesEnabled = typesEnabled
 
@@ -269,12 +270,12 @@ def setContainerPos(container, pos):
 
     for item in container["itemList"]:
         if item["type"] == "entity":
-            [width, height] = setEntityPos(item, contentPos)
-            contentPos[0] += width
+            [x, y] = setEntityPos(item, contentPos)
+            contentPos[0] += x
 
         elif item["type"] == "container":
-            [width, height] = setContainerPos(item, contentPos)
-            contentPos[0] += width
+            [x, y] = setContainerPos(item, contentPos)
+            contentPos[0] += x
 
         else:
             fatalError(f"Unknown type: {item['type']}")
@@ -282,9 +283,11 @@ def setContainerPos(container, pos):
 
     return [container["size"][0], container["size"][1]]
 
-def determineRelativePositionOfItems(sequence, pos):
 
-    #Build the relative positions for each element in header (I.E entities)
+def determineRelativePositionOfItems(sequence, pos):
+    """
+        Builds the relative positions for each element in header (I.E entities)
+    """
     for item in sequence["itemList"]:
         if item["type"] == "entity":
             [width, height] = setEntityPos(item, pos)
@@ -1183,22 +1186,19 @@ def getItemsBetween(sequence, entityAId, entityBId):
 
     familyTreeListList = [getFamiliyTreeList(entityList[0]), getFamiliyTreeList(entityList[1])]
 
-    commonAncestor = getCommonAncestor(familyTreeListList[0], familyTreeListList[1])
-
-    #print(f"commonAncestor {commonAncestor}")
 
     startItem = entityList[0]
 
     endItem = entityList[1]
 
     if familyTreeListList[0] != familyTreeListList[1]:
+        commonAncestor = getCommonAncestor(familyTreeListList[0], familyTreeListList[1])
 
         if len(familyTreeListList[0]) > 1:
             startItem = familyTreeListList[0][familyTreeListList[0].index(commonAncestor)-1]
 
         if len(familyTreeListList[1]) > 1:
             endItem = familyTreeListList[1][familyTreeListList[1].index(commonAncestor)-1]
-        
 
     itemList = []
 
@@ -1214,29 +1214,6 @@ def getItemsBetween(sequence, entityAId, entityBId):
 
     return itemList
 
-
-def getFamiliyTreeList(item):
-    """
-        Get a list of parent, grand parent, great grandparent, and so on ...    
-
-        The last element in the list will always be None, 
-        since that is the top element (root)
-    """
-
-    p = item["parent"]
-
-    familyTreeList = []
-
-    while p != None:
-        familyTreeList.append(p)
-
-        p = p["parent"]
-
-    familyTreeList.append(p)
-
-
-    return familyTreeList
-        
 
 def getCommonAncestor(familyTreeAList, familyTreeBList):
     """
@@ -1336,9 +1313,32 @@ def getLeftTraversalDistance(item, stopItem):
         return toAdd + getLeftTraversalDistance(nextItem, stopItem)
     
 
+def getFamiliyTreeList(item):
+    """
+        Get a list of parent, grand parent, great grandparent, and so on ...    
+
+        The last element in the list will always be None, 
+        since that is the top element (root)
+    """
+
+    p = item["parent"]
+
+    familyTreeList = [item]
+
+    while p != None:
+        familyTreeList.append(p)
+
+        p = p["parent"]
+
+    familyTreeList.append(p)
+
+
+    return familyTreeList
+        
+
 def getEntityCC(sequence, firstEntity, secondEntity):
     """
-        Get the Centrum-Centrum distance between two entities...
+        Get the Center-Center distance between two entities...
         Also, it is the distance between NOT INCLUDING 
 
         +-----+      +-----+
@@ -1598,6 +1598,7 @@ def addCC(sequence, fromEntity, toEntity, distanceToAdd):
             resizeContainer(p)
             p = p["parent"]
 
+
 def commSorter(i):
     """
         If only I knew how to make lambdas...
@@ -1696,10 +1697,10 @@ def resizeByVariantSingleEntity(sequence, variant):
         #Change left and right
         variantWidth = contentWidth
         toAdd = contentWidth - widthBySides 
-        #print(f"{variant['branchList'][0]['name']} contentWidth is bigg {contentWidth}")
+        debugPrint(f"{variant['branchList'][0]['name']} contentWidth is bigg {contentWidth}", "RESIZE")
         variant["right"] += int((toAdd + 1) / 2)
         variant["left"]  += int(toAdd / 2)
-        #print(f"{variant['left']} {variant['right']}")
+        debugPrint(f"{variant['left']} {variant['right']}", "RESIZE")
         
     entitySizeNoCol = entity["size"][0] - 1 #Remove the middle col from the equation
 
@@ -1731,8 +1732,9 @@ def resizeByVariantSingleEntity(sequence, variant):
         resizeContainer(familyTreeList[-2])
 
     variant["size"][0] = variantWidth + variantElementWidth 
-    #print(f"variantSize: {variant['size']}")
-    #print(f"entitySize: {variant['fromEntity']['size']}")
+
+    debugPrint(f"variantSize: {variant['size']}", "RESIZE")
+    debugPrint(f"entitySize: {variant['fromEntity']['size']}", "RESIZE")
 
 
 def getEntityRight(entity):
@@ -2088,12 +2090,6 @@ def determineSizeOfItemList(itemList):
             determineSizeOfContainer(item)
 
 
-
-
-
-
-
-
 def resizeItemsByOnActions(sequence):
     """
         Resize items (entities and containers)
@@ -2173,7 +2169,6 @@ def resizeByVariants(sequence):
             resizeByVariant(sequence, action)
 
     debugPrint("resizeByVariants END", "FUNCTION")
-
 
 
 def resizeCommunications(sequence):
@@ -2347,7 +2342,6 @@ def initializeEntities(sequence):
     initializeEntityList(sequence)
 
     debugPrint("initializeEntities END", "FUNCTION")
-    
 
 
 def getFirstEntityInSet(sequence, s):
@@ -2415,8 +2409,6 @@ def setStartAndEndEntityForVariant(sequence, variant):
     
     variant["fromEntityId"] = getFirstEntityInSet(sequence, entityIdSet)
     variant["toEntityId"]   = getLastEntityInSet(sequence, entityIdSet)
-
-    #print(f"from: {variant['fromEntity']['name']} <-> {variant['toEntity']['name']}")
 
 
 def getOnActionSides(onAction):
@@ -2555,7 +2547,6 @@ def setVariantSides(sequence, variant):
     variant["left"]    = left  + variant["border"][3] + variant["margin"][3] + variant["padding"][3]
     variant["right"]   = right + variant["border"][1] + variant["margin"][1] + variant["padding"][1] 
 
-
     #print(f"left: {variant['left']} | | | {variant['right']} ")
     #print(f"{variant['margin']} {variant['border']} {variant['padding']}")
 
@@ -2684,7 +2675,6 @@ def determineHeightOfSequence(sequence):
 
     sequence["height"] = totalHeight
     
-
 
 def initializeContainerVim(container):
     """
@@ -2877,6 +2867,7 @@ def initializeVimCommands(sequence):
         sequence["vim"]["commands"] = {} 
 
     applyFunctionOnAllThings(sequence, addCommandFromThing)
+
 
 def initializeHeader(sequence):
     """

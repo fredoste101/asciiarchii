@@ -1734,7 +1734,6 @@ def resizeByVariantSingleEntity(sequence, variant):
     variant["size"][0] = variantWidth + variantElementWidth 
 
     debugPrint(f"variantSize: {variant['size']}", "RESIZE")
-    debugPrint(f"entitySize: {variant['fromEntity']['size']}", "RESIZE")
 
 
 def getEntityRight(entity):
@@ -1799,14 +1798,40 @@ def getVariantRight(variant):
 
 def resizeByVariantManyEntitites(sequence, variant):
     """
-        Aight. What are we trying to accomplish here...?
-
         I think we are trying to figure out if we need to increase
         left margin on fromEntity and right margin on toEntity,
         for the given variant.
 
         It is not that complicated.
 
+      fromEntity     toEntity
+          |             |
+          v             v
+        +---+  +---+  +---+   <--+
+        | A |  | B |  | C |      | items 
+        +---+  +---+  +---+   <--+
+          |      |      |
+       +---+---------------+  <--+
+       | V |               |     |
+       +---+               |     +-- Variant
+       |                   |     |
+       +-------------------+  <--+
+       <->|      |      |<->
+        L |      |      | R
+
+
+        If L is larger than As' left,
+        we must increase As' left accordingly.
+
+        If R is larger than Cs' right,
+        we must increase Cs' right accordingly.
+
+        That is what we do here:
+        check if L and R sticks out of A and C respectively,
+        and if so, corrects it (increasing A and/or C).
+
+        Note that A, and C can be within one or many containers,
+        and that B represents one or more entities/containers between A and C.
     """
 
     #Check if we need to add anything to the entity because of 
@@ -1821,7 +1846,6 @@ def resizeByVariantManyEntitites(sequence, variant):
     fullVariantLeft  = getVariantLeft(variant) 
     fullVariantRight = getVariantRight(variant) 
 
-
     if fullVariantLeft > entityLeft:
         #Increase margin to make room for the variant
         fromEntity["margin"][3] += fullVariantLeft - entityLeft
@@ -1829,6 +1853,7 @@ def resizeByVariantManyEntitites(sequence, variant):
         if fromEntity["parent"] != None:
             familyTreeList = getFamiliyTreeList(fromEntity)
             resizeContainer(familyTreeList[-2])
+
         else:
             resizeEntity(fromEntity)
 
@@ -2717,6 +2742,8 @@ def initializeVim(sequence):
         Initialize the vim-attribute for every entity (should be for every type of thing later...) 
         Also, should be made sort of optional?
     """
+    debugPrint("initializeVim BEGIN", "FUNCTION")
+
     for entity in sequence["entityList"]:
         if "vim" not in entity:
             entity["vim"] = {}
@@ -2730,6 +2757,8 @@ def initializeVim(sequence):
 
     for action in sequence["actionList"]:
         initializeActionVim(action) 
+
+    debugPrint("initializeVim END", "FUNCTION")
 
 
 def removeCircularDependenciesContainer(container):

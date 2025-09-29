@@ -6,7 +6,19 @@ import sys
 import copy
 
 
-doDebuggingPrints = False
+#if any debuggin should be displayed
+_doDebuggingPrints = False
+
+#these are the debug types:
+# CHARGETTING - The process of getting chars from the things
+# SIZING      - Initial sizing of things. This might change later though, see RESIZING 
+# RESIZING    - Whenever a thing needs to be resized, this will tell why and how (hopefully)
+# FUNCTION    - Print function begin and end. This is not consistent... I.E not all function has this.
+_debuggingTypesEnabled = set() 
+
+
+def setDebuggingTypesEnabled(typesEnabled):
+    _debuggingTypesEnabled = typesEnabled
 
 
 def fatalError(msg):
@@ -14,9 +26,16 @@ def fatalError(msg):
     sys.exit(1)
 
 
-def debugPrint(msg):
-    if doDebuggingPrints:
-        print(f"DEBUG: {msg}")
+def debugPrint(msg, t=""):
+    """
+        msg - what to print
+        t - which type of debuggin it is. can be enabled/disabled through global debuggingTypesEnabled
+    """
+    if _doDebuggingPrints:
+        debugType = t 
+        
+        if t in _debuggingTypesEnabled: 
+            print(f"{debugType}: {msg}")
 
 
 def setStyle(e):
@@ -37,8 +56,7 @@ def setStyle(e):
 def addCoord(thing, x, y, name):
     """
         Add a coordinate to be colored with name.
-        So in essence: thing[name] will have x and y added,
-        to color it later :) and maybe more than color in future. who knows.
+        So in essence: thing[name] will have x and y added.
     """
     if len(thing[name]) == 0:
         thing[name].append([[x,y], [x+1,y]])
@@ -507,6 +525,7 @@ def determineRelativePositions(sequence):
 
         TODO: add relative offset to both x and y
     """
+    debugPrint("determineRelativePositions BEGIN", "FUNCTION")
 
     pos = [0,0]
 
@@ -517,9 +536,11 @@ def determineRelativePositions(sequence):
 
     #Now place the actions. Their x-coordinates are calculated from
     #which entities they touch[sic]
-    currentActionRow = sequence["headerHeight"] + sequence["marginToFirstAction"] 
+    currentActionRow = sequence["header"]["size"][1] + sequence["marginToFirstAction"] 
 
     determineRelativePositionOfActions(sequence, currentActionRow)
+
+    debugPrint("determineRelativePositions END", "FUNCTION")
 
 
 def getCharFromOnAction(action, x, y):
@@ -531,7 +552,7 @@ def getCharFromOnAction(action, x, y):
        action["startPos"][0] <= x < action["endPos"][0]:
         if y <= action["contentStartPos"][1] and y >= action["contentEndPos"][1]:
             if x >= action["contentStartPos"][0] and x <= action["contentEndPos"][0]:
-                debugPrint(f"{action['contentStartPos']} {action['contentEndPos']}")
+                debugPrint(f"{action['contentStartPos']} {action['contentEndPos']}", "CHARGETTING")
                 c = action["content"][x - action["contentStartPos"][0]]
                 addCoord(action, x, y, "contentCoordinateList")
                 return [True, c]      
@@ -568,7 +589,7 @@ def getCharFromCommunicationAction(action, x, y):
 
     if y <= action["contentStartPos"][1] and y >= action["contentEndPos"][1]:
         if x >= action["contentStartPos"][0] and x <= action["contentEndPos"][0]:
-            debugPrint(f"DEBUG: {action['contentStartPos']} {action['contentEndPos']}")
+            debugPrint(f"{action['contentStartPos']} {action['contentEndPos']}", "CHARGETTING")
             c = action["content"][x - action["contentStartPos"][0]]
             addCoord(action, x, y, "contentCoordinateList")
             return [True, c]      
@@ -579,7 +600,7 @@ def getCharFromCommunicationAction(action, x, y):
 def getContentChar(item, x, y):
     if y <= item["contentStartPos"][1] and y >= item["contentEndPos"][1]:
         if x >= item["contentStartPos"][0] and x <= item["contentEndPos"][0]:
-            debugPrint(f"{item['contentStartPos']} {item['contentEndPos']}")
+            debugPrint(f"{item['contentStartPos']} {item['contentEndPos']}", "CHARGETTING")
 
             charIndex = x - item["contentStartPos"][0]
 
@@ -735,7 +756,7 @@ def getCharFromHeader(sequence, x, y):
     char = None
     isCharFound = False
 
-    if y < sequence["headerHeight"]:
+    if y < sequence["header"]["size"][1]:
 
         #timeLine can be in header as well, if there are containers
         #but timeLine takes precedence over container
@@ -755,7 +776,7 @@ def getCharFromHeader(sequence, x, y):
             if y in range(item["startPos"][1], item["size"][1]):
                 [rc, char] = getCharFromItem(item, x, y)
                 if rc:
-                    debugPrint(f"{char} on {y} {x}")
+                    debugPrint(f"{char} on {y} {x}", "CHARGETTING")
                     isCharFound = True
                     break
             
@@ -946,12 +967,7 @@ def getInitialEntityHeight(entity):
            entity["margin"][0] + entity["margin"][2]
 
 
-def determineSizeOfEntity(entity):
-    """
-        Determines both the height and width of an entity.
-        This is done by adding up content, padding, border, and margin
-    """
-
+def sizeEntity(entity):
     entity["size"] = [0, 0] 
 
     entity["size"][0] = getEntityWidth(entity)
@@ -964,24 +980,48 @@ def determineSizeOfEntity(entity):
     entity["widthNoMargin"] = entity["width"] - entity["margin"][1] - entity["margin"][3]
 
 
-def determineSizeOfActions(sequence):
+def resizeEntity(entity):
     """
-        Determine both the height and width of actions.
-
-        The width can later be used to resize the width of entities.
-        This can be a little bit tricky, but is doable.
-        
+        This is the same as determineSizeOfEntity
+        but with a different debugPrint
     """
-    for action in sequence["rawActionList"]:
+    oldSize = copy.copy(entity["size"])
+    sizeEntity(entity)
 
-        if action["type"] == "on":
-            determineSizeOfOnAction(action)
 
-        elif action["type"] == "communication":
-            determineSizeOfCommunicationAction(action)
-            
-        else:
-            fatalError("error only 'on', and 'communication' supported now") 
+    debugPrint(f"entity {entity['name']} size change: {oldSize} -> {entity['size']}", "RESIZING")
+
+
+def determineSizeOfEntity(entity):
+    """
+        Determines both the height and width of an entity.
+        This is done by adding up content, padding, border, and margin
+    """
+    sizeEntity(entity)
+    debugPrint(f"entity {entity['name']} size: {entity['size']}", "SIZING")
+
+
+def determineSizeOfCommunicationAction(action):
+    """
+        Get the size of a "communication" action
+
+        return the size as:
+        [width, height]
+    """
+
+    action["width"] = len(action["content"]) + 2  #This is a travesty :( should be padding instead
+
+    if "margin" not in action:
+        action["margin"] = [0,0,1,0]
+
+    action["height"] = 2 + action["margin"][2] + action["margin"][0]
+
+    action["size"] = [action["width"], action["height"]]
+
+    debugPrint(f"communication-action: {action['content']} determined size: {action['size']}", 
+               "SIZING")
+
+    return action["size"] 
 
 
 def determineSizeOfOnAction(action):
@@ -1021,27 +1061,30 @@ def determineSizeOfOnAction(action):
 
     action["height"] = height
 
+    debugPrint(f"on-action: {action['content']} determined size: {action['size']}", 
+               "SIZING")
+
     return [width, height]
 
 
-def determineSizeOfCommunicationAction(action):
+def determineSizeOfActions(sequence):
     """
-        Get the size of a "communication" action
+        Determine both the height and width of actions.
 
-        return the size as:
-        [width, height]
+        The width can later be used to resize the width of entities.
+        This can be a little bit tricky, but is doable.
+        
     """
+    for action in sequence["rawActionList"]:
 
-    action["width"] = len(action["content"]) + 2  #This is a travesty :( should be padding instead
+        if action["type"] == "on":
+            determineSizeOfOnAction(action)
 
-    if "margin" not in action:
-        action["margin"] = [0,0,1,0]
-
-    action["height"] = 2 + action["margin"][2] + action["margin"][0]
-
-    action["size"] = [action["width"], action["height"]]
-
-    return action["size"] 
+        elif action["type"] == "communication":
+            determineSizeOfCommunicationAction(action)
+            
+        else:
+            fatalError("error only 'on', and 'communication' supported now") 
 
 
 def determineSizeOfVariantAction(action):
@@ -1051,6 +1094,8 @@ def determineSizeOfVariantAction(action):
         TODO: this will involve going through the branchList
         calculating the sizes of the induvidual items 
         and take sums and max of certain values
+    
+        This is not called anywhere?
     """
 
     if "border" not in action:
@@ -1469,6 +1514,90 @@ def getEntitiesSpanned(sequence, communication):
     return numSpanned
 
 
+def addCC(sequence, fromEntity, toEntity, distanceToAdd):
+    """
+        Add distance (centrum-centrum) between two entities.
+
+        Then fromEntity must be before toEntity in the entityList.
+
+        distanceToAdd is the total number of chars to add between them,
+        and will be distributed between every inbetween entity.
+
+        TODO: explain how this is done, and why...
+        even more 
+        TODO: add unit test for this to see how it behaves and fix any inconsistencies.
+        because there are probably bugs here. I know because the person who did it is an idiot.
+        (hint: it was I <- look! correct grammar!)
+    """
+
+    #Aigh then. We gonna need all involved mfs here.
+    #Also a good chance I'm off by one (or two here)
+    itemList = getItemsBetween(sequence, 
+                               fromEntity["id"], 
+                               toEntity["id"])
+
+    if distanceToAdd % 2 == 1:
+        #Ok. Need one more if uneven to get 1 margin in both directions on signal-content
+        distanceToAdd += 1
+
+    #Ok. We can be really clever here, and sort of get the proportional increase per item,
+    #or we can go with the easy route and just distribute them evenly.
+    #easy route, I choose you
+
+    #CHECKME: what if distanceToAdd is really small, and there are a lot of items in the list?
+    #does it still work, and who gets the addage? I think this is wrong as of now :(
+    #TODO: fix the above issue that most likely exists...
+
+    distanceToAddEachItem = int(distanceToAdd / len(itemList))
+
+    isFirstEntity = True
+
+    for item in itemList[:-1]:
+        if isFirstEntity:
+            debugPrint(f"Adding {distanceToAddEachItem} to {item['name']}", "RESIZING")
+            item["margin"][1] += distanceToAddEachItem + distanceToAddEachItem % 2
+
+        else:
+            #Distribute evently beteween left and right margin. 
+            #if uneven. right will get the extra.
+            item["margin"][1] += int(distanceToAddEachItem / 2) + distanceToAddEachItem % 2
+            item["margin"][3] += int(distanceToAddEachItem / 2)
+
+        
+        if item["type"] == "entity":
+            resizeEntity(item)
+
+        else:
+            resizeContainer(item)
+
+        isFirstEntity = False
+
+    debugPrint(f"Adding {distanceToAddEachItem + distanceToAddEachItem % 2} to {itemList[-1]['name']}", "RESIZING")
+
+    itemList[-1]["margin"][3] += distanceToAddEachItem + distanceToAddEachItem % 2
+
+    if itemList[-1]["type"] == "entity":
+        resizeEntity(itemList[-1])
+
+    else:
+        resizeContainer(itemList[-1])
+    
+    #This is a travesty... should really nicen'[tm] things up...
+    #I mean, in the CC-calc the family trees are already there. Should mayhaps add familyTrees to
+    #the elements themselfs at the start, since it is a static feature.
+    familyTreeListList = [getFamiliyTreeList(fromEntity), getFamiliyTreeList(toEntity)]
+
+    commonAncestor = getCommonAncestor(familyTreeListList[0], familyTreeListList[1])
+
+    #This is a bit of a hack I feel like :(
+    #But it works, so don't touch :|
+    if commonAncestor != None:
+        resizeContainer(commonAncestor)
+        p = commonAncestor["parent"]
+        while p:
+            resizeContainer(p)
+            p = p["parent"]
+
 def commSorter(i):
     """
         If only I knew how to make lambdas...
@@ -1595,7 +1724,11 @@ def resizeByVariantSingleEntity(sequence, variant):
         entity["margin"][1] += (fullRightSide - rightEntitySide) 
 
     #Change the entity size
-    determineSizeOfEntity(entity)
+    resizeEntity(entity)
+
+    if entity["parent"] != None:
+        familyTreeList = getFamiliyTreeList(entity)
+        resizeContainer(familyTreeList[-2])
 
     variant["size"][0] = variantWidth + variantElementWidth 
     #print(f"variantSize: {variant['size']}")
@@ -1665,6 +1798,13 @@ def getVariantRight(variant):
 def resizeByVariantManyEntitites(sequence, variant):
     """
         Aight. What are we trying to accomplish here...?
+
+        I think we are trying to figure out if we need to increase
+        left margin on fromEntity and right margin on toEntity,
+        for the given variant.
+
+        It is not that complicated.
+
     """
 
     #Check if we need to add anything to the entity because of 
@@ -1684,16 +1824,26 @@ def resizeByVariantManyEntitites(sequence, variant):
         #Increase margin to make room for the variant
         fromEntity["margin"][3] += fullVariantLeft - entityLeft
 
-        determineSizeOfEntity(fromEntity)
+        if fromEntity["parent"] != None:
+            familyTreeList = getFamiliyTreeList(fromEntity)
+            resizeContainer(familyTreeList[-2])
+        else:
+            resizeEntity(fromEntity)
+
         #Get the new entityLeft
         [entityLeft, _] = getEntitySides(fromEntity)
     
 
     if fullVariantRight > entityRight:
         #Increase margin to make room for the variant
-        toEntity["margin"][1] += fullVariantLeft - entityRight 
+        toEntity["margin"][1] += fullVariantRight - entityRight 
 
-        determineSizeOfEntity(toEntity)
+        if toEntity["parent"] != None:
+            familyTreeList = getFamiliyTreeList(toEntity)
+            resizeContainer(familyTreeList[-2])
+        else:
+            resizeEntity(toEntity)
+
         #Get the new entityRight
         [_, entityRight] = getEntitySides(toEntity)
 
@@ -1760,6 +1910,8 @@ def resizeByVariant(sequence, variant):
         Hope this works. Hope leaves us last
 
     """
+    debugPrint("resizeByVariant BEGIN", "FUNCTION")
+
     #Every action resized their respective stuff already.
     for branch in variant["branchList"]:
         for branchAction in branch["actionList"]:
@@ -1772,166 +1924,21 @@ def resizeByVariant(sequence, variant):
     else:
         resizeByVariantManyEntitites(sequence, variant)
 
+    debugPrint("resizeByVariant END", "FUNCTION")
 
-def addCC(sequence, fromEntity, toEntity, distanceToAdd):
+
+def sizeContainer(container):
     """
-        Add distance (centrum-centrum) between two entities.
+        Set the size of the container.
+        This is done by first setting the size of all underlying things,
+        using the result of this we get the size of the container.
 
-        Then fromEntity must be before toEntity in the entityList.
-
-        distanceToAdd is the total number of chars to add between them,
-        and will be distributed between every inbetween entity.
-
-        TODO: explain how this is done, and why...
-        even more TODO: add unit test for this to see how it behaves and fix any inconsistencies.
-    """
-
-    #Aigh then. We gonna need all involved mfs here.
-    #Also a good chance I'm off by one (or two here)
-    itemList = getItemsBetween(sequence, 
-                               fromEntity["id"], 
-                               toEntity["id"])
-
-    if distanceToAdd % 2 == 1:
-        #Ok. Need one more if uneven to get 1 margin in both directions on signal-content
-        distanceToAdd += 1
-
-    #Ok. We can be really clever here, and sort of get the proportional increase per item,
-    #or we can go with the easy route and just distribute them evenly.
-    #easy route, I choose you
-
-    #CHECKME: what if distanceToAdd is really small, and there are a lot of items in the list?
-    #does it still work, and who gets the addage? I think this is wrong as of now :(
-    #TODO: fix the above issue that most likely exists...
-
-    distanceToAddEachItem = int(distanceToAdd / len(itemList))
-
-    isFirstEntity = True
-
-    for item in itemList[:-1]:
-        if isFirstEntity:
-            debugPrint(f"Adding {distanceToAddEachItem} to {item['name']}")
-            item["margin"][1] += distanceToAddEachItem + distanceToAddEachItem % 2
-
-        else:
-            #Distribute evently beteween left and right margin. 
-            #if uneven. right will get the extra.
-            item["margin"][1] += int(distanceToAddEachItem / 2) + distanceToAddEachItem % 2
-            item["margin"][3] += int(distanceToAddEachItem / 2)
-
-        
-        if item["type"] == "entity":
-            determineSizeOfEntity(item)
-
-        else:
-            determineSizeOfContainer(item)
-
-        isFirstEntity = False
-
-    debugPrint(f"Adding {distanceToAddEachItem + distanceToAddEachItem % 2} to {itemList[-1]['name']}")
-
-    itemList[-1]["margin"][3] += distanceToAddEachItem + distanceToAddEachItem % 2
-
-
-    if itemList[-1]["type"] == "entity":
-        determineSizeOfEntity(itemList[-1])
-
-    else:
-        determineSizeOfContainer(itemList[-1])
-    
-    #This is a travesty... should really nicen'[tm] things up...
-    #I mean, in the CC-calc the family trees are already there. Should mayhaps add familyTrees to
-    #the elements themselfs at the start, since it is a static feature.
-    familyTreeListList = [getFamiliyTreeList(fromEntity), getFamiliyTreeList(toEntity)]
-
-    commonAncestor = getCommonAncestor(familyTreeListList[0], familyTreeListList[1])
-
-    #This is a bit of a hack I feel like :(
-    #But it works, so don't touch :|
-    if commonAncestor != None:
-        determineSizeOfContainer(commonAncestor)
-        p = commonAncestor["parent"]
-        while p:
-            determineSizeOfContainer(p)
-            p = p["parent"]
-
-
-def resizeItemWidth(sequence):
-    """
-        Go through all actions and see if any entities needs to be resized.
-
-        And if they do need to be resized, resize them :)
-        Light weight.
+        I.E if the container contains 3 entities with widhts [3, 5, 4]
+        this container will be the sum of these in width (plus padding, border, margin),
+        in this example 12.     
     """
 
-    #First. go with the on-actions
-    #These will resize their respective entity
-    for action in sequence["rawActionList"]:
-        if action["type"] == "on":
-            entity = getEntityWithId(sequence, action["entityId"])
-
-            if action["width"] > entity["width"]:
-                entity["margin"][1] = entity["margin"][1] + int((action["width"] - entity["widthNoMargin"]) / 2)
-           
-                #Ok. I'm a bit unsure if I should add here or above, but I'll try here :)
-                entity["margin"][3] = entity["margin"][3] + int((action["width"] - entity["widthNoMargin"] + 1) / 2)
-
-                if entity["parent"] != None:
-                    familyTreeList = getFamiliyTreeList(entity)
-                    determineSizeOfContainer(familyTreeList[-2])
-
-                else:
-                    determineSizeOfEntity(entity)
-
-    #Now for the communications
-
-    #Sort to minimize width introduction
-    communicationList = sortCommunications(sequence)
-
-    for action in communicationList:
-        if action["type"] == "communication":
-
-            [firstEntity, secondEntity] = getFromAndToEntities(sequence, 
-                                                               action["fromEntityId"], 
-                                                               action["toEntityId"])
-
-            cc = getEntityCC(sequence, firstEntity, secondEntity)  
-
-            if action["width"] > cc:
-                
-                distanceToAdd = action["width"] - cc 
-
-                addCC(sequence, firstEntity, secondEntity, distanceToAdd)
-
-
-    for action in sequence["actionList"]:
-        if action["type"] == "variant":
-            resizeByVariant(sequence, action)
-
-
-    #Resize all communications now that items in header are resized
-    #The header is always the one making the calls
-    for action in sequence["rawActionList"]:
-        if action["type"] == "communication":
-            
-            [firstEntity, secondEntity] = getFromAndToEntities(sequence, 
-                                                               action["fromEntityId"], 
-                                                               action["toEntityId"])
-
-            cc = getEntityCC(sequence, firstEntity, secondEntity)    
-            #print(f"action {action['content']} width {cc}")
-    
-            action["width"] = cc 
-            action["size"][0] = cc
-
-
-def determineSizeOfContainer(container):
-    """
-        Determine the size of a container,
-
-        Should this be used to resize later? maybe :)
-    """
-    determineSizeOfItemList(container["itemList"])
+    sizeItemList(container["itemList"])
 
     #Get the total height (largest height in itemList) in itemLsit,
     #Get the total width (the sum of all items in itemList (+margin)) in itemList
@@ -1965,7 +1972,97 @@ def determineSizeOfContainer(container):
 
     container["size"] = [container["width"], container["height"]]
 
-    debugPrint(f"height: {height} width: {width}")
+    debugPrint(f"sizeContainer: container: {container['name']} size: {container['size']}", "SIZING")
+
+
+def sizeItemList(itemList):
+    for item in itemList:
+        
+        #Set default padding, margin and border if nothing is specified.
+        #This is done on every item-type
+        if "padding" not in item:
+            item["padding"] = [0, 0, 0, 0]
+
+        if "margin" not in item:
+            item["margin"] = [0, 0, 0, 0]
+
+        if "border" not in item:
+            item["border"] = [1, 1, 1, 1] 
+        
+        if item["type"] == "entity":
+            #Here we will set the item height, which will persist throughout.
+            #We also set the item width, but that might change later.
+            sizeEntity(item)
+
+        elif item["type"] == "container":
+            sizeContainer(item)
+
+
+def resizeContainer(container):
+    """
+        This is the same as sizeContainer,
+        but it has a different debugPrint for easier debbuging.
+    """
+    sizeBefore = copy.copy(container["size"])
+
+    resizeItemList(container["itemList"])
+
+    #Get the total height (largest height in itemList) in itemLsit,
+    #Get the total width (the sum of all items in itemList (+margin)) in itemList
+
+    height = 0
+    width  = 0
+
+    for item in container["itemList"]:
+        if item["height"] > height:
+            height = item["height"] 
+
+        width += item["width"]
+
+    height += 1 + \
+              container["border"][0] + container["border"][2] + \
+              container["padding"][0] + container["padding"][2] + \
+              container["margin"][0] + container["margin"][2] 
+
+    if width < len(container["name"]):
+        width = len(container["name"])
+
+    width += container["border"][1] + container["border"][3] + \
+             container["padding"][1] + container["padding"][3]
+
+    container["widthNoMargin"] = width 
+
+    container["width"] =  container["widthNoMargin"] + \
+                          container["margin"][1] + container["margin"][3]
+
+    container["height"] = height
+
+    container["size"] = [container["width"], container["height"]]
+
+    debugPrint(f"container: {container['name']} size change: {sizeBefore} -> {container['size']}", "RESIZING")
+
+
+def resizeItemList(itemList):
+    for item in itemList:
+        
+        #Set default padding, margin and border if nothing is specified.
+        #This is done on every item-type
+        if "padding" not in item:
+            item["padding"] = [0, 0, 0, 0]
+
+        if "margin" not in item:
+            item["margin"] = [0, 0, 0, 0]
+
+        if "border" not in item:
+            item["border"] = [1, 1, 1, 1] 
+        
+        if item["type"] == "entity":
+            #Here we will set the item height, which will persist throughout.
+            #We also set the item width, but that might change later.
+            resizeEntity(item)
+
+        elif item["type"] == "container":
+            resizeContainer(item)
 
 
 def determineSizeOfItemList(itemList):
@@ -1989,6 +2086,151 @@ def determineSizeOfItemList(itemList):
 
         elif item["type"] == "container":
             determineSizeOfContainer(item)
+
+
+
+
+
+
+
+
+def resizeItemsByOnActions(sequence):
+    """
+        Resize items (entities and containers)
+        by the corresponding on-actions that exist.
+
+        If an on-action is larger than the entity upon which it sits,
+        must increase that entitys' width.
+        
+        AND if the entity is within a container (within a container within a container....)
+        we must also resize that (those, recursively).
+    """
+    #First. go with the on-actions
+    #These will resize their respective entity
+    for action in sequence["rawActionList"]:
+        if action["type"] == "on":
+            entity = getEntityWithId(sequence, action["entityId"])
+
+            if action["width"] > entity["width"]:
+                toAddRightMargin = entity["margin"][1] + int((action["width"] - entity["widthNoMargin"]) / 2)
+                #Ok. I'm a bit unsure if I should add here or above, but I'll try here :)
+                toAddLeftMargin = entity["margin"][3] + int((action["width"] - entity["widthNoMargin"] + 1) / 2)
+
+                entity["margin"][1] = toAddRightMargin
+                entity["margin"][3] = toAddLeftMargin 
+
+                debugPrint(f"entity: {entity['name']} is resized due to on-action: {action['content']} " \
+                           f"previous size: {entity['size']} " \
+                           f"adding: {toAddRightMargin} <- -> {toAddLeftMargin}", 
+                           "RESIZING")
+
+                resizeEntity(entity)
+
+                if entity["parent"] != None:
+                    familyTreeList = getFamiliyTreeList(entity)
+                    resizeContainer(familyTreeList[-2])
+
+
+def resizeItemsByCommunicationActions(sequence):
+    """
+        Resize by communications.
+
+        A communication spans 2 or more entities,
+        and if it is larger than the space between them,
+        we must increase their size.
+
+        TODO: give example
+    """
+    communicationList = sortCommunications(sequence)
+
+    for action in communicationList:
+        if action["type"] == "communication":
+
+            [firstEntity, secondEntity] = getFromAndToEntities(sequence, 
+                                                               action["fromEntityId"], 
+                                                               action["toEntityId"])
+
+            cc = getEntityCC(sequence, firstEntity, secondEntity)  
+
+            if action["width"] > cc:
+                
+                distanceToAdd = action["width"] - cc 
+
+                addCC(sequence, firstEntity, secondEntity, distanceToAdd)
+
+
+def resizeByVariants(sequence):
+    """
+        Resize entities (and indirectly container) by checking variants.
+
+        This might mean adding to either left, right or both of
+        certain entities.
+    """
+    debugPrint("resizeByVariants BEGIN", "FUNCTION")
+
+    for action in sequence["actionList"]:
+        if action["type"] == "variant":
+            resizeByVariant(sequence, action)
+
+    debugPrint("resizeByVariants END", "FUNCTION")
+
+
+
+def resizeCommunications(sequence):
+    """
+        Resize all communications after items in header are resized 
+        due to variants and other things.
+
+        The header is always the one making the calls,
+        so the distance between entities will decide the width of the communications
+    """
+    for action in sequence["rawActionList"]:
+        if action["type"] == "communication":
+            
+            [firstEntity, secondEntity] = getFromAndToEntities(sequence, 
+                                                               action["fromEntityId"], 
+                                                               action["toEntityId"])
+
+            cc = getEntityCC(sequence, firstEntity, secondEntity)    
+
+            if action["size"][0] != cc:
+                
+                debugPrint(f"communication-action {action['content']} width changed: {action['size'][0]} -> {cc}", 
+                            "RESIZING")
+    
+            action["width"] = cc 
+            action["size"][0] = cc
+
+
+def resizeItemWidth(sequence):
+    """
+        Go through all actions and see if any entities needs to be resized.
+
+        And if they do need to be resized, resize them :)
+        Light weight.
+    """
+    debugPrint("resizeItemWidth BEGIN", "FUNCTION")
+    debugPrint("RESIZING BEGIN", "RESIZING")
+
+    resizeItemsByOnActions(sequence)
+
+    resizeItemsByCommunicationActions(sequence)
+
+    resizeByVariants(sequence)
+
+    resizeCommunications(sequence)
+
+    debugPrint("RESIZING END", "RESIZING")
+    debugPrint("resizeItemWidth END", "FUNCTION")
+
+
+def determineSizeOfContainer(container):
+    """
+        Determine the size of a container,
+
+        Should this be used to resize later? maybe :)
+    """
+    sizeContainer(container)
 
 
 def initializeItemPositions(itemList):
@@ -2077,8 +2319,6 @@ def initializeEntityList(sequence):
             entity["nextEntitySibling"] = nextEntity 
             nextEntity["previousEntitySibling"] = entity 
 
-        debugPrint(entity)
-
     sequence["entityList"] = entityList
 
 
@@ -2096,6 +2336,7 @@ def initializeEntities(sequence):
 
         Also sets positions to a default value [-1, -1]
     """
+    debugPrint("initializeEntities BEGIN", "FUNCTION")
 
     determineSizeOfItemList(sequence["itemList"])
 
@@ -2104,6 +2345,8 @@ def initializeEntities(sequence):
     initializeHierarchy(sequence["itemList"])
 
     initializeEntityList(sequence)
+
+    debugPrint("initializeEntities END", "FUNCTION")
     
 
 
@@ -2349,8 +2592,6 @@ def initializeVariants(sequence):
         And then in the end we can adjust entity width depending on the
         variant configuration
     """
-    
-    
     for a in sequence["actionList"]:
         if a["type"] == "variant":
             initializeVariant(sequence, a)
@@ -2409,12 +2650,15 @@ def initializeActions(sequence):
         Determine the size of each of them.
         Also the variants, we determine the start and end entity they cover :)
     """
+    debugPrint("initializeActions BEGIN", "FUNCTION")
 
     buildRawActionList(sequence)
 
     determineSizeOfActions(sequence)
 
     initializeVariants(sequence)
+
+    debugPrint("initializeActions END", "FUNCTION")
 
 
 def determineHeightOfSequence(sequence):
@@ -2423,7 +2667,7 @@ def determineHeightOfSequence(sequence):
         + the height of all actions.
     """
     
-    totalHeight = sequence["headerHeight"] + sequence["marginToFirstAction"] + sequence["marginAfterLastAction"]
+    totalHeight = sequence["header"]["size"][1] + sequence["marginToFirstAction"] + sequence["marginAfterLastAction"]
 
     for action in sequence["actionList"]:
         if action["type"] == "on":
@@ -2439,6 +2683,7 @@ def determineHeightOfSequence(sequence):
             fatalError(f"unknown action type: {action['type']}")
 
     sequence["height"] = totalHeight
+    
 
 
 def initializeContainerVim(container):
@@ -2485,14 +2730,13 @@ def initializeVim(sequence):
     for entity in sequence["entityList"]:
         if "vim" not in entity:
             entity["vim"] = {}
-        entity["borderCoordinateList"] = [] #Where borders are placed
-        entity["contentCoordinateList"] = [] #Where content exists are placed
-        entity["timeLineCoordinateList"] = [] #Where time line exists
+        entity["borderCoordinateList"]      = [] #Where borders are placed
+        entity["contentCoordinateList"]     = [] #Where content exists are placed
+        entity["timeLineCoordinateList"]    = [] #Where time line exists
 
     for item in sequence["itemList"]:
         if item["type"] == "container":
             initializeContainerVim(item)
-
 
     for action in sequence["actionList"]:
         initializeActionVim(action) 
@@ -2634,6 +2878,23 @@ def initializeVimCommands(sequence):
 
     applyFunctionOnAllThings(sequence, addCommandFromThing)
 
+def initializeHeader(sequence):
+    """
+        Initialize values in the header of the sequence.
+    """
+    debugPrint("initializeHeader BEGIN", "FUNCTION")
+    sequence["header"] = {}
+    
+    sequence["header"]["size"] = [0, determineHeightsOfHeader(sequence["itemList"])]
+
+    if "marginToFirstAction" not in sequence: #Is header-margin a better name?
+        sequence["marginToFirstAction"] = 3
+
+    if "marginAfterLastAction" not in sequence:
+        sequence["marginAfterLastAction"] = 3
+
+    debugPrint("initializeHeader END", "FUNCTION")
+
 
 def generateSequence(config):
     """
@@ -2659,13 +2920,7 @@ def generateSequence(config):
 
     initializeEntities(sequence)
 
-    sequence["headerHeight"] = determineHeightsOfHeader(sequence["itemList"]) 
-
-    if "marginToFirstAction" not in sequence: #Is header-margin a better name?
-        sequence["marginToFirstAction"] = 3
-
-    if "marginAfterLastAction" not in sequence:
-        sequence["marginAfterLastAction"] = 3
+    initializeHeader(sequence)
 
     initializeActions(sequence)
 

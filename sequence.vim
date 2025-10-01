@@ -1,10 +1,15 @@
-"So this file contains utility-functions for generated json-sequence,
-"and accompaning ascii-graph.
+" So this file contains utility-functions for generated json-sequence,
+" and accompaning ascii-graph.
 "
-"It has functions to load in the json-config,
-"and color the different components
-"and add commands to be used on different components
+" It has functions to load in the json-config,
+" and color the different components
+" and add commands to be used on different components
+"
+" All functions and (global/buffer) variables should be 
+" prefixed with ASCIIARCHII_
 
+"The sequence :)
+let b:ASCIIARCHII_sequence = v:null
 
 function! ASCIIARCHII_ExecuteCommandOnCoord(commandName)
 	"Execute a command with commandName = watevs. set in
@@ -22,8 +27,8 @@ function! ASCIIARCHII_ExecuteCommandOnCoord(commandName)
 	let x = pos[2] - 1
 	let y = pos[1] - 1
 
-	if has_key(g:sequence, "vim")
-		let sequenceVimConfig = g:sequence["vim"]
+	if has_key(b:ASCIIARCHII_sequence, "vim")
+		let sequenceVimConfig = b:ASCIIARCHII_sequence["vim"]
 		
 		if has_key(sequenceVimConfig, "commands")
 			let commands = sequenceVimConfig["commands"]
@@ -51,7 +56,7 @@ function! ASCIIARCHII_LoadSequence(fileName)
 	"Load in the sequence. It will be stored in a global variable
 	"Not very nice solution, but hey...    just hey.
 	
-	let g:sequence = json_decode(join(readfile(a:fileName), "\n"))
+	let b:ASCIIARCHII_sequence = json_decode(join(readfile(a:fileName), "\n"))
 
 endfunction
 
@@ -234,11 +239,11 @@ endfunction
 
 function! ASCIIARCHII_ApplyColor()
 	let runningNum = 0
-	for item in g:sequence["itemList"]
+	for item in b:ASCIIARCHII_sequence["itemList"]
 		let runningNum = ASCIIARCHII_ApplyItemColor(item, runningNum)
 	endfor
 
-	for action in g:sequence["actionList"]
+	for action in b:ASCIIARCHII_sequence["actionList"]
 		call ASCIIARCHII_ApplyActionColor(action, runningNum)
 	endfor
 endfunction
@@ -255,9 +260,9 @@ function! ASCIIARCHII_InitializeCommands()
 	"Initialize commands
 	"well. idea is to get all commands in sequence[vim][commands]
 	"and then create a mapping for it to be used. Can it be smart? yesn't 
-	"
-	if has_key(g:sequence, "vim")
-		let vimConfig = g:sequence["vim"]
+	
+	if has_key(b:ASCIIARCHII_sequence, "vim")
+		let vimConfig = b:ASCIIARCHII_sequence["vim"]
 
 		if has_key(vimConfig, "commands")
 			for cmd in keys(vimConfig["commands"])
@@ -268,6 +273,184 @@ function! ASCIIARCHII_InitializeCommands()
 
 endfunction
 
+"
+" Variables and functions to allow header to be shown in top-window
+"
+
+let b:ASCIIARCHII_mainWindowId      = 0                                      
+let b:ASCIIARCHII_headerWindowId    = 0                                       
+                                                                   
+"To know where to go when we go into the buffer yet again :) lets go
+let b:ASCIIARCHII_currentWindow = 0                                   
+
+
+function ASCIIARCHII_debugPrint(msg)
+	"Turn this to true if you want to debug the mess that is the
+	"header-window... glhf bradda, u gonna need it (the luck, not the fun)
+	
+	if v:false
+		echom a:msg
+	endif
+endfunction
+                                                           
+
+function! ASCIIARCHII_openHeaderWin()                                    
+                                                             
+    call ASCIIARCHII_debugPrint("openHeaderWin")
+
+    if b:ASCIIARCHII_headerWindowId != 0                                  
+    	call ASCIIARCHII_debugPrint("HEADER EXISTS")
+    	
+        if b:ASCIIARCHII_headerWindowId == win_getid()                     
+    	    call ASCIIARCHII_debugPrint("WE ALREADY IN THE HEADER. no open")
+
+            return                                              
+        endif                                                      
+                                                                  
+        "Maybe even check that I'm in the mainWindow?              
+        if b:ASCIIARCHII_mainWindowId == win_getid()
+	    let pos = getcurpos()                                       
+	    call win_gotoid(b:ASCIIARCHII_headerWindowId)                            
+	    let pos[1] = 1 "Keep at line 1 in header, everythin' else equal
+					     
+	    call setpos(".", pos)         
+	    call win_gotoid(b:ASCIIARCHII_mainWindowId)
+	endif
+       
+    else
+    	call ASCIIARCHII_debugPrint("WE ARE OPENING THE HEADER")
+
+        let b:ASCIIARCHII_mainWindowId = win_getid()
+        let pos = getcurpos() 
+        execute ":sp"                                              
+        let b:ASCIIARCHII_headerWindowId = win_getid()                           
+
+	call ASCIIARCHII_debugPrint("ids after opening: main:" .. b:ASCIIARCHII_mainWindowId ..  " header:" .. b:ASCIIARCHII_headerWindowId)
+                                                                    
+        let pos[1] = 1 "Keep at line 1 in header, everythin' else equal
+                                                         
+        call setpos(".", pos)                             
+	
+        execute "resize " .. (b:ASCIIARCHII_sequence['header']['size'][1] + b:ASCIIARCHII_sequence['marginToFirstAction'])                                
+	let b:ASCIIARCHII_currentWindow = 1
+
+        call win_gotoid(b:ASCIIARCHII_mainWindowId)                     
+    end                                                      
+endfunction                                                   
+                                                               
+                                                                
+function! ASCIIARCHII_closeHeaderWin()                                        
+    call ASCIIARCHII_debugPrint("closeHeaderWin")
+
+    if b:ASCIIARCHII_headerWindowId != 0                                      
+        call win_execute(b:ASCIIARCHII_headerWindowId, "close")                
+    endif                                                           
+
+    let b:ASCIIARCHII_headerWindowId = 0                                         
+    let b:ASCIIARCHII_mainWindowId   = 0                                         
+    let b:ASCIIARCHII_currentWindow  = 0                                          
+endfunction                                                            
+                                                                        
+                                                                         
+function! ASCIIARCHII_sequenceLeave()                                                  
+    "We will close all windows when we move outside of one of them into new
+    "buffer. This is probably not 100% perfect, but hey, it is what it is
+    
+    call ASCIIARCHII_debugPrint("sequenceLeave")
+    call ASCIIARCHII_debugPrint("SEQUENCE LEAVE: " .. b:ASCIIARCHII_headerWindowId .. " " .. b:ASCIIARCHII_mainWindowId .. " " .. b:ASCIIARCHII_currentWindow) 
+
+    if b:ASCIIARCHII_headerWindowId != 0 && b:ASCIIARCHII_mainWindowId != 0
+        if b:ASCIIARCHII_headerWindowId == win_getid()
+	    call ASCIIARCHII_debugPrint("kill main window")
+
+            let b:ASCIIARCHII_currentWindow = 2
+	    
+            call win_execute(b:ASCIIARCHII_mainWindowId, "close")
+            
+            let b:ASCIIARCHII_mainWindowId = win_getid()
+            let b:ASCIIARCHII_headerWindowId = 0
+
+        else
+	    call ASCIIARCHII_debugPrint("kill header window")
+
+            let b:ASCIIARCHII_currentWindow = 1
+
+            call win_execute(b:ASCIIARCHII_headerWindowId, "close")
+            let b:ASCIIARCHII_headerWindowId = 0
+
+        endif
+    endif
+endfunction
+
+
+function! ASCIIARCHII_sequenceSwapWindow()
+    call ASCIIARCHII_debugPrint("sequenceSwapWindow")
+
+    if b:ASCIIARCHII_headerWindowId != 0 && b:ASCIIARCHII_mainWindowId != 0
+        if b:ASCIIARCHII_headerWindowId == win_getid()
+	    call ASCIIARCHII_debugPrint("we in header")
+
+            let b:ASCIIARCHII_currentWindow = 2
+
+        elseif b:ASCIIARCHII_mainWindowId == win_getid()
+	    call ASCIIARCHII_debugPrint("we in main")
+
+            let b:ASCIIARCHII_currentWindow = 1
+
+	else
+	    call ASCIIARCHII_debugPrint("NEW WINDOW not a sequence... what to do here...")
+
+	    if win_id2win(b:ASCIIARCHII_headerWindowId) == 0
+	        "header have disapeared. must rethink life
+	        call ASCIIARCHII_debugPrint("RETHINKING LIFE")
+
+	        let b:ASCIIARCHII_headerWindowId = 0
+                let b:ASCIIARCHII_currentWindow = 0
+	    endif
+
+	    if b:ASCIIARCHII_currentWindow == 1
+	        call ASCIIARCHII_debugPrint("in main, closing header")
+
+		call win_execute(b:ASCIIARCHII_headerWindowId, "close")
+	        let b:ASCIIARCHII_headerWindowId = 0
+
+	    elseif b:ASCIIARCHII_currentWindow == 2
+
+	        call ASCIIARCHII_debugPrint("in header, closing main, switching main id")
+		call win_execute(b:ASCIIARCHII_mainWindowId, "close")
+                let b:ASCIIARCHII_mainWindowId = b:ASCIIARCHII_headerWindowId
+	        let b:ASCIIARCHII_headerWindowId = 0
+	    endif
+
+        endif
+    else
+
+	call ASCIIARCHII_debugPrint("DO NOTHING " .. win_getid())
+    endif
+endfunction
+
+
+function! ASCIIARCHII_sequenceEnter()
+    call ASCIIARCHII_debugPrint("SEQUENCE ENTER")
+    if b:ASCIIARCHII_currentWindow == 0
+	"If we were here before, we came from a header-less sequence
+        return
+    endif
+ 
+    if b:ASCIIARCHII_currentWindow == 1
+        "we were in the main-window. so open up header
+	call ASCIIARCHII_debugPrint("START IN MAIN")
+        call ASCIIARCHII_openHeaderWin()
+ 
+    else
+	call ASCIIARCHII_debugPrint("START IN HEADER")
+	"We were in header, so open header, and go there
+        call ASCIIARCHII_openHeaderWin()
+ 
+        call win_gotoid(b:ASCIIARCHII_headerWindowId)
+    endif
+endfunction
+ 
 
 function! ASCIIARCHII_InitializeVimSequence(fileName)
 	"Initialize the sequence by loading the json-file,
@@ -281,9 +464,25 @@ function! ASCIIARCHII_InitializeVimSequence(fileName)
 
 
 	"To make gg go to same column at first row when jumping back and
-	"forth. Its really nice.
+	"forth. Its really nice. But, even nicer is the open-header
+	"functionality I'm about to lay down in this ucka' (it is layed down,
+	"with varying amounts of success...)
 	setlocal nostartofline
 
+
+	"Ok, the header-window thing is a bit shaky... it sort of works, but
+	"in some cases it might spaz out :(
+	augroup ASCIIARCHII_sequence_au
+	    au!
+	    autocmd BufLeave <buffer> call ASCIIARCHII_sequenceLeave()
+	    autocmd BufEnter <buffer> call ASCIIARCHII_sequenceEnter()
+	    autocmd WinEnter <buffer> call ASCIIARCHII_sequenceSwapWindow()
+	augroup END
+
+	"TODO: these commands might interfere with user-defined commands...
+	"Must check if that is true and take action accordingly...
+	nnoremap <buffer> <leader>oh :call ASCIIARCHII_openHeaderWin()<CR>
+	nnoremap <buffer> <leader>ch :call ASCIIARCHII_closeHeaderWin()<CR>
 endfunction
 
 

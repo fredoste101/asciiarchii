@@ -258,6 +258,12 @@ Things that I want to do to increase functionality
 * Much friendlier help-page when doing --help
   Also a tourough[sic] explantion of how json should be structured.
   Both a generalized explanation and examples.
+  Also, more info about vim-commands and such.
+
+* And split when going down enough in window,
+  synching windows with one another to always see the header.
+  This will be done with commands and mappings. Not with autocmds CursorMoved.
+  It will be to slow I think.
 
 
 *Sender received for communications. 
@@ -284,7 +290,7 @@ Things that I want to do to increase functionality
   |         |
 
 * outsideCommunication
-An example of a outsideCommunication:
+  An example of a outsideCommunication:
 
 +--------+
 | entity |
@@ -309,6 +315,9 @@ An example of a outsideCommunication:
   as well as 
    col and x.
   Better to just use one. Which one doesn't matter but just pick one u retard.
+
+
+* Create a dummy project that showcases the power of AsciiArchii ;) or lack of power maybe ;( 
   
 
 === Developing ===
@@ -326,6 +335,15 @@ TODO: some architecture notes. I.E how do things work, how is structure etc...
 === Testing ===
 
 See README.txt in test/ directory
+
+
+=== Bugs ===
+
+* I've tried really hard to get the header in vim to work when doing -oh (open header),
+  But it still has limitations. For example when opening a new window, not a aa-file,
+  it will spazz out :( I don't have an easy solution for this. I get E242, which is strange.
+  However, it is such a good functionality on large sequences, that I keep it. 
+  Even though it is flawed....
 
 
 === Future ===

@@ -2809,7 +2809,7 @@ def applyFunctionOnItem(sequence, item, function):
     #Call the function
     function(sequence, item)
 
-    if item["type"] == "variant":
+    if item["type"] == "container":
         for subItem in item["itemList"]:
             applyFunctionOnItem(sequence, subItem, function)
 
@@ -2820,6 +2820,9 @@ def applyFunctionOnAllItems(sequence, function):
 
 
 def applyFunctionOnAction(sequence, action, function):
+    """
+        Apply function on action recursevly if it is a variant.
+    """
     function(sequence, action)
 
     if action["type"] == "variant":

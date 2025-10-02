@@ -8,8 +8,6 @@
 " All functions and (global/buffer) variables should be 
 " prefixed with ASCIIARCHII_
 
-"The sequence :)
-let b:ASCIIARCHII_sequence = v:null
 
 function! ASCIIARCHII_ExecuteCommandOnCoord(commandName)
 	"Execute a command with commandName = watevs. set in
@@ -273,16 +271,10 @@ function! ASCIIARCHII_InitializeCommands()
 
 endfunction
 
-"
-" Variables and functions to allow header to be shown in top-window
-"
 
-let b:ASCIIARCHII_mainWindowId      = 0                                      
-let b:ASCIIARCHII_headerWindowId    = 0                                       
-                                                                   
-"To know where to go when we go into the buffer yet again :) lets go
-let b:ASCIIARCHII_currentWindow = 0                                   
-
+"
+" Functions to allow header to be shown in top-window
+"
 
 function ASCIIARCHII_debugPrint(msg)
 	"Turn this to true if you want to debug the mess that is the
@@ -455,6 +447,10 @@ endfunction
 function! ASCIIARCHII_InitializeVimSequence(fileName)
 	"Initialize the sequence by loading the json-file,
 	"applying style and initializing commands.
+	
+	"The sequence :) A bit of a global variable catastrophe, but could be fixed
+	"l8ter (l8ter equals never as they say)
+	let b:ASCIIARCHII_sequence = v:null
 
 	call ASCIIARCHII_LoadSequence(a:fileName)
 
@@ -469,9 +465,14 @@ function! ASCIIARCHII_InitializeVimSequence(fileName)
 	"with varying amounts of success...)
 	setlocal nostartofline
 
-
 	"Ok, the header-window thing is a bit shaky... it sort of works, but
 	"in some cases it might spaz out :(
+	let b:ASCIIARCHII_mainWindowId      = 0                                      
+	let b:ASCIIARCHII_headerWindowId    = 0                                       
+									   
+	"To know where to go when we go into the buffer yet again :) lets go
+	let b:ASCIIARCHII_currentWindow = 0                                   
+
 	augroup ASCIIARCHII_sequence_au
 	    au!
 	    autocmd BufLeave <buffer> call ASCIIARCHII_sequenceLeave()

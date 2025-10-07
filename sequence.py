@@ -23,6 +23,7 @@ def setDebuggingTypesEnabled(typesEnabled):
 
 
 def fatalError(msg):
+    #FIXME: print to stderr
     print(f"ERROR: {msg}")
     sys.exit(1)
 
@@ -2917,6 +2918,7 @@ def initializeHeader(sequence):
         sequence["marginAfterLastAction"] = 3
 
     debugPrint("initializeHeader END", "FUNCTION")
+
 
 
 def generateSequence(config):

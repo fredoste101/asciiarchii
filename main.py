@@ -4,7 +4,9 @@
 import argparse
 import json
 import sequence as seq
+import common as aacommon
 import sys
+import os
 
 
 def prepareCLIArguments():
@@ -92,9 +94,25 @@ def main():
 
     with open(cliArgs.file, "r") as inputfile:
         config = json.loads(inputfile.read())
+    
+    path = os.path.dirname(cliArgs.file) 
 
-    sequence = seq.generateSequence(config)
+    if path != "":
+        path += "/"
 
+    aacommon.handleAuxiliary(config, path)
+
+    if "type" in config:
+        #To be able in the future to create other types of diagrams :)
+        if config["type"] == "sequence":
+            sequence = seq.generateSequence(config)
+
+        else:
+            print(f"ERROR: unknown asciiarchitecture-type: {sequence['type']}") 
+            sys.exit(1)
+
+    else:
+        sequence = seq.generateSequence(config)
 
     if cliArgs.jsonOut:
         with open(cliArgs.jsonOut, "w") as jsonFile:

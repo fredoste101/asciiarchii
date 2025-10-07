@@ -233,6 +233,15 @@ An example of a variant with 2 branches:
 === INPUT SYNTAX ===
 See the file inputSyntax.txt in the same directory as this :)
 
+Also now allows something called auxiliaryFiles,
+which is a list of json-files referenced by a diagram,
+that will substitute strings that matches substitutions in 
+any auxiliary json-file.
+
+All substitutions should start with "__aux__" for some reason... is this really necessary?
+
+TODO: need to add more explanation about auxiliary files... With example usages
+
 
 === VIM ===
 How do we link the sequence to vim?

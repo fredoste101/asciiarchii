@@ -346,13 +346,16 @@ TODO: some architecture notes. I.E how do things work, how is structure etc...
 See README.txt in test/ directory
 
 
-=== Bugs ===
+=== BUGS ===
 
 * I've tried really hard to get the header in vim to work when doing -oh (open header),
   But it still has limitations. For example when opening a new window, not a aa-file,
   it will spazz out :( I don't have an easy solution for this. I get E242, which is strange.
   However, it is such a good functionality on large sequences, that I keep it. 
   Even though it is flawed....
+
+* If there is a empty branch above one that is filled,
+  it will not be pretty... I.E it will break a bit.
 
 
 === Future ===

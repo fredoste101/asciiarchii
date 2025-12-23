@@ -2630,7 +2630,8 @@ def getActionsInVariant(variant):
                 aList.extend(getActionsInVariant(branchAction))
 
             else:
-                fatalError("NEJ")
+                fatalError(f"Not valid type: {branchAction['type']}. "
+                           f"Valid types are: 'variant', 'on', 'communication'")
 
     return aList
 
@@ -2881,7 +2882,7 @@ def addCommandFromThing(sequence, thing):
                             
                     #Must get coordinatelist from content. is already there :O                    
                 else:
-                    fatalError(f"commands of category: {commandTarged} NOT SUPPORTED")
+                    fatalError(f"commands of category: {commandTarget} NOT SUPPORTED")
 
 
 def initializeVimCommands(sequence):

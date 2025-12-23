@@ -395,6 +395,9 @@ endfunction
                                                                         
 
 function ASCIIARCHII_sequenceBufferEnter()
+	"TODO: check if it works if it is scrolled in X-direction
+	"I.E if it opens the main-window far to the right, will header follow?
+	"No most definitly not :( Have to fix this then.. :(
 	
 	if exists("b:ASCIIARCHII_mainWindowId")
 		if b:ASCIIARCHII_mainWindowId != 0 && win_getid() == b:ASCIIARCHII_mainWindowId
@@ -510,6 +513,13 @@ function! ASCIIARCHII_InitializeVimSequence(fileName)
 	"functionality I'm about to lay down in this ucka' (it is layed down,
 	"with varying amounts of success...)
 	setlocal nostartofline
+
+
+	"Otherwise it will not be good stuff
+	setlocal nowrap
+
+	"TODO: do I need to set like nomodifiable and stuff?
+
 
 	"Ok, the header-window thing is a bit shaky... it sort of works, but
 	"in some cases it might spaz out :(

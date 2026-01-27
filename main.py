@@ -8,6 +8,8 @@ import common as aacommon
 import sys
 import os
 
+import debug 
+
 
 def prepareCLIArguments():
     """
@@ -37,7 +39,7 @@ def prepareCLIArguments():
                    "\n\n--- contact ---\n\nfredrik.ostdahl@gmail.com"
 
     argParser = argparse.ArgumentParser(description=helpString,
-                                       formatter_class=argparse.RawTextHelpFormatter,
+                                        formatter_class=argparse.RawTextHelpFormatter,
                                         epilog=epilogString)
 
     argParser.add_argument("--file", 
@@ -45,7 +47,8 @@ def prepareCLIArguments():
 
     argParser.add_argument("--getInputSyntax", 
                            action="store_true",
-                           help="Get a help-text describing the input syntax,\nas well as example input->outputs.\n\nprotip: pipe this into less.\n\n", 
+                           help="Get a help-text describing the input syntax,\n"\
+                                "as well as example input->outputs.\n\nprotip: pipe this into less.\n\n", 
                            default=False)
 
     argParser.add_argument("--display", 
@@ -60,6 +63,16 @@ def prepareCLIArguments():
     argParser.add_argument("--jsonOut", 
                            metavar="<filename.json>",
                            help="The generated json will be saved into this file\n\n")
+
+    argParser.add_argument("--debug", 
+                           action="store_true",
+                           default=False,
+                           help="Enable debug prints. Also set which one with --debugType")
+
+    argParser.add_argument("--debugType", 
+                           action="append",
+                           help="Enable types of debug prints. Needs --debug to work.\nCan give as many as you like, eg:\n"\
+                                "--debugType RESIZING --debugType FUNCTION ... etc")
     
     return argParser
 
@@ -101,6 +114,13 @@ def main():
         path += "/"
 
     aacommon.handleAuxiliary(config, path)
+
+    if cliArgs.debug:
+        debug.enableDebugging()
+
+        for debugType in cliArgs.debugType:
+            debug.enableDebuggingType(debugType)
+            print(debugType)
 
     if "type" in config:
         #To be able in the future to create other types of diagrams :)

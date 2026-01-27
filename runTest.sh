@@ -29,7 +29,6 @@ if [ $? ]; then
 
 	#Go back to where we where when command was run
 	popd &> /dev/null
-
 fi
 
 

@@ -1,0 +1,305 @@
+{
+    "type":"sequence",
+    "name":"variant in variant that needed some update in the code :)",
+    "description":"How UPC MCT is run",
+    "itemList":
+    [
+      {
+        "type":"container",
+        "name":"BIGONE",
+        "padding":[0,1,0,1],
+        "margin":[0,3,0,0],
+        "itemList":
+        [
+          {
+            "id":0,
+            "type":"entity",
+            "name":"MAIN",
+            "margin":[0,1,0,0]
+          },
+          {
+            "id":1,
+            "type":"entity",
+            "name":"THREAD_STUFF",
+            "margin":[0,1,0,0]
+          },
+
+          {
+            "id":2,
+            "type":"entity",
+            "name":"thread_proxy",
+            "margin":[0,1,0,0]
+          },
+
+          {
+            "type":"container",
+            "name":"thStub",
+            "padding":[0,1,0,1],
+            "itemList":
+            [
+              {
+                "id":8,
+                "type":"entity",
+                "name":"stub_stub_stub",
+                "margin":[0,1,0,0]
+              },
+              {
+                "id":9,
+                "type":"entity",
+                "name":"stuff"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type":"container",
+        "padding":[0,1,0,1],
+        "name":"SomeOtherCont",
+        "itemList":
+        [
+          {
+            "type":"container",
+            "padding":[0,1,0,1],
+            "name":"dingdong",
+            "itemList":
+            [
+              {
+                "id":3,
+                "type":"entity",
+                "name":"ddThread",
+                "margin":[0,1,0,0]
+              },
+              {
+                "id":4,
+                "type":"entity",
+                "name":"ddThread2",
+                "margin":[0,1,0,0]
+              }
+            ]
+          },
+
+          {
+            "type":"container",
+            "padding":[0,1,0,1],
+            "name":"area",
+            "itemList":
+            [
+              {
+                "id":5,
+                "type":"entity",
+                "name":"retarder",
+                "margin":[0,1,0,0]
+              },
+              {
+                "id":10,
+                "type":"entity",
+                "name":"retarder_offload"
+              }
+            ]    
+          },
+          {
+            "type":"container",
+            "padding":[0,1,0,1],
+            "name":"pm",
+            "itemList":
+            [
+              {
+                "id":6,
+                "type":"entity",
+                "name":"reporter",
+                "margin":[0,1,0,0]
+              },
+              {
+                "id":7,
+                "type":"entity",
+                "name":"stufness"
+              }
+            ]    
+          }
+        ]
+      }
+    ],
+    "actionList":
+    [
+      {
+        "type":"variant",
+        "padding":[0,1,0,1],
+        "branchList":
+        [
+          {
+            "name":"useSomething",
+            "padding":[0,1,0,1],
+            "actionList":
+            [
+              {
+                "type":"on",
+                "entityId":0,
+                "content":"TODO: yepp buddy",
+                "margin":[0,0,1,0] 
+              }
+            ] 
+          },
+          {
+            "name":"single n ready to mingle",
+            "padding":[0,1,0,1],
+            "actionList":
+            [
+              {
+                "type":"communication",
+                "content":"CREATE",
+                "fromEntityId":0,
+                "toEntityId":1
+              },
+              {
+                "type":"on",
+                "entityId":1,
+                "content":"Setup ketchup powerup",
+                "margin":[0,0,1,0] 
+              },
+              {
+                "type":"on",
+                "entityId":1,
+                "content":"wait until better times",
+                "margin":[0,0,1,0] 
+              },
+              {
+                "type":"on",
+                "entityId":0,
+                "content":"setup_sumthin",
+                "margin":[0,0,1,0] 
+              },
+
+              {
+                "type":"variant",
+                "padding":[0,1,0,1],
+                "branchList":
+                [
+                  {
+                    "name":"useAnotherThing",
+                    "actionList":
+                    [
+                      {
+                        "type":"communication",
+                        "content":"CREATE",
+                        "fromEntityId":0,
+                        "toEntityId":6
+                      },
+                      {
+                        "type":"communication",
+                        "content":"CREATE",
+                        "fromEntityId":0,
+                        "toEntityId":7
+                      }
+                    ]
+                  }
+                ]
+              },
+
+              {
+                "type":"communication",
+                "content":"CREATE",
+                "fromEntityId":0,
+                "toEntityId":4
+              },
+
+              {
+                "type":"communication",
+                "content":"CREATE",
+                "fromEntityId":0,
+                "toEntityId":3
+              },
+
+              {
+                "type":"on",
+                "margin":[1,0,1,0],
+                "content":"socket accepting, non blocking",
+                "entityId":0
+              },
+            
+              {
+                "type":"on",
+                "content":"variable = true;",
+                "entityId":0
+              },
+
+              {
+                "type":"variant",
+                "padding":[0,1,0,1],
+                "branchList":
+                [
+                  {
+                    "name":"while true",
+                    "actionList":
+                    [
+                      {
+                        "type":"variant",
+                        "padding":[0,1,0,1],
+                        "branchList":
+                        [
+                          {
+                            "name":"receive signals from some guy",
+                            "actionList":
+                            [
+                              {
+                                "type":"on",
+                                "content":"Receive on socket connection from thread",
+                                "entityId":1
+                              },
+                              {
+                                "type":"variant",
+                                "padding":[0,1,0,1],
+                                "branchList":
+                                [
+                                  {
+                                    "name":"PeBe",
+                                    "actionList":
+                                    [
+                                      {
+                                        "type":"on",
+                                        "content":"Receive on socket from anotherThread",
+                                        "entityId":1  
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "name":"CAR",
+                                    "actionList":
+                                    [
+                                      {
+                                        "type":"on",
+                                        "content":"Receive CAR-thread messages from PeBi",
+                                        "entityId":1  
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+
+              },
+
+              {
+                "type":"on",
+                "content":"tjoppTjopp",
+                "entityId":0
+              }
+
+            ] 
+          }
+        ]
+      }
+
+    ],
+
+    "marginToFirstAction":3,
+    "marginAfterLastAction":3
+
+}

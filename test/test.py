@@ -15,6 +15,7 @@ from ..sequence import getSequenceGraph
 from ..sequence import getEntityCC 
 
 
+
 class Test(unittest.TestCase):
 
     #Where test files are present

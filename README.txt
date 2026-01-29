@@ -258,18 +258,6 @@ See README_vim.txt
 === TODO LIST ===
 Things that I want to do to increase functionality
 
-
-* Much friendlier help-page when doing --help
-  Also a tourough[sic] explantion of how json should be structured.
-  Both a generalized explanation and examples.
-  Also, more info about vim-commands and such.
-
-* And split when going down enough in window,
-  synching windows with one another to always see the header.
-  This will be done with commands and mappings. Not with autocmds CursorMoved.
-  It will be to slow I think.
-
-
 * Sender received for communications. 
   To jump to send-point and receive point with graphical ting
 
@@ -306,6 +294,10 @@ Things that I want to do to increase functionality
 
 * onMany - a on type action but covering many entities
 
+* And split when going down enough in window,
+  synching windows with one another to always see the header.
+  This will be done with commands and mappings. Not with autocmds CursorMoved.
+  It will be to slow I think.
 
 * I don't think style works at all with variants.
   It would be nice with margins/padding on variants, to make it a lot nicer looking.
@@ -320,6 +312,11 @@ Things that I want to do to increase functionality
    col and x.
   Better to just use one. Which one doesn't matter but just pick one u retard.
 
+
+* Much friendlier help-page when doing --help
+  Also a tourough[sic] explantion of how json should be structured.
+  Both a generalized explanation and examples.
+  Also, more info about vim-commands and such.
 
 * Create a dummy project that showcases the power of AsciiArchii ;) or lack of power maybe ;( 
   

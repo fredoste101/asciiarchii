@@ -85,7 +85,7 @@ def determineHeightsOfHeader(itemList):
 def determineWidthOfSequence(sequence):
     """
         The header (entities) will after resizing due to actions,
-        determine the total width of the sequence :)
+        need its width to be determined, which also is the width of the sequence :)
     """
 
     w = 0
@@ -291,20 +291,20 @@ def determineRelativePositionOfOnAction(sequence, onAction, row):
 
     middleCol = entity["timeLineCol"] 
 
-    startCol = middleCol - int(onAction["width"] / 2) 
+    startCol = middleCol - int(onAction["size"][0] / 2) 
 
 
     #OUTER POS
     onAction["startPos"]            = [startCol, row]
-    onAction["endPos"]              = [startCol + onAction["width"], 
-                                       row + onAction["height"] - 1] 
+    onAction["endPos"]              = [startCol + onAction["size"][0], 
+                                       row + onAction["size"][1] - 1] 
 
     #Border
     onAction["borderStartPos"]      = [startCol + onAction["margin"][3], 
                                        row + onAction["margin"][0]]
 
-    onAction["borderEndPos"]        = [startCol + onAction["width"] - onAction["border"][1] - onAction["margin"][1], 
-                                       row + onAction["height"] - onAction["border"][2] - onAction["margin"][2]] 
+    onAction["borderEndPos"]        = [startCol + onAction["size"][0] - onAction["border"][1] - onAction["margin"][1], 
+                                       row + onAction["size"][1] - onAction["border"][2] - onAction["margin"][2]] 
 
 
     #Content. 'member, content is only allowed to be 1 line in height as of now.... 
@@ -439,7 +439,7 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
         for branchAction in branch["actionList"]:
             if branchAction["type"] == "on":      
                 determineRelativePositionOfOnAction(sequence, branchAction, branchContentRow)
-                branchContentRow += branchAction["height"]
+                branchContentRow += branchAction["size"][1]
 
             elif branchAction["type"] == "variant":
                 determineRelativePositionOfVariantAction(sequence, branchAction, branchContentRow)
@@ -476,11 +476,11 @@ def determineRelativePositionOfActions(sequence, startRow):
     for action in sequence["actionList"]:
         if action["type"] == "on":
             determineRelativePositionOfOnAction(sequence, action, currentActionRow)
-            currentActionRow += action["height"]
+            currentActionRow += action["size"][1]
 
         elif action["type"] == "communication":
             determineRelativePositionOfCommunicationAction(sequence, action, currentActionRow)
-            currentActionRow += action["height"]
+            currentActionRow += action["size"][1]
 
         elif action["type"] == "variant":
             determineRelativePositionOfVariantAction(sequence, action, currentActionRow)
@@ -997,15 +997,15 @@ def determineSizeOfCommunicationAction(action):
         [width, height]
     """
 
-    action["width"] = len(action["content"]) +\
-                        action['padding'][1] + action['padding'][3] +\
-                        action['margin'][1] + action['margin'][3] 
+    width = len(action["content"]) +\
+             action['padding'][1] + action['padding'][3] +\
+             action['margin'][1] + action['margin'][3] 
 
-    action["height"] = 2 + \
-                        action["margin"][2] + action["margin"][0] +\
-                        action["padding"][0] + action["padding"][2] #Padding in height is a bit tricky on the communication...
+    height = 2 + \
+              action["margin"][2] + action["margin"][0] +\
+              action["padding"][0] + action["padding"][2] #Padding in height is a bit tricky on the communication...
 
-    action["size"] = [action["width"], action["height"]]
+    action["size"] = [width, height]
 
     debug.debugPrint(f"communication-action: {action['content']} determined size: {action['size']}", 
                      "SIZING")
@@ -1047,9 +1047,6 @@ def determineSizeOfOnAction(action):
 
     action["size"] = [width, height]
 
-    action["width"] = width
-
-    action["height"] = height
 
     debug.debugPrint(f"on-action: {action['content']} determined size: {action['size']}", 
                      "SIZING")
@@ -1781,6 +1778,9 @@ def getEntitySides(entity):
         R - Right
         
         This returns [L, R]
+
+        Note that sides can change during sizing and resizing due to actions.
+        
     """
     return [getEntityLeft(entity), getEntityRight(entity)]
 
@@ -2175,10 +2175,10 @@ def resizeItemsByOnActions(sequence):
         if action["type"] == "on":
             entity = getEntityWithId(sequence, action["entityId"])
 
-            if action["width"] > entity["width"]:
-                toAddRightMargin = entity["margin"][1] + int((action["width"] - entity["widthNoMargin"]) / 2)
+            if action["size"][0] > entity["width"]:
+                toAddRightMargin = entity["margin"][1] + int((action["size"][0] - entity["widthNoMargin"]) / 2)
                 #Ok. I'm a bit unsure if I should add here or above, but I'll try here :)
-                toAddLeftMargin = entity["margin"][3] + int((action["width"] - entity["widthNoMargin"] + 1) / 2)
+                toAddLeftMargin = entity["margin"][3] + int((action["size"][0] - entity["widthNoMargin"] + 1) / 2)
 
                 entity["margin"][1] = toAddRightMargin
                 entity["margin"][3] = toAddLeftMargin 
@@ -2216,9 +2216,9 @@ def resizeItemsByCommunicationActions(sequence):
 
             cc = getEntityCC(sequence, firstEntity, secondEntity)  
 
-            if action["width"] > cc:
+            if action["size"][0] > cc:
                 
-                distanceToAdd = action["width"] - cc 
+                distanceToAdd = action["size"][0] - cc 
 
                 addCC(sequence, firstEntity, secondEntity, distanceToAdd)
 
@@ -2273,7 +2273,6 @@ def resizeCommunications(sequence):
                 debug.debugPrint(f"communication-action {action['content']} width changed: {action['size'][0]} -> {cc}", 
                             "RESIZING")
     
-            action["width"] = cc 
             action["size"][0] = cc
 
 
@@ -2282,6 +2281,7 @@ def resizeItemWidth(sequence):
         Go through all actions and see if any entities needs to be resized.
 
         And if they do need to be resized, resize them :)
+
         Light weight.
     """
     debug.debugPrint("resizeItemWidth BEGIN", "FUNCTION")
@@ -2400,7 +2400,7 @@ def initializeEntityList(sequence):
 
 def initializeEntities(sequence):
     """
-        Given an input json-file,
+        Given an input sequence-configuration 
         set all default sizes of entities.
 
         This might change later when we recalculate the widths 
@@ -2696,7 +2696,7 @@ def initializeVariant(sequence, variant):
         Initialize a particular variant.
 
         This includes: 
-            Setting default style: border, padding, margin
+            Setting default style: border, padding, margin (if non are set explicitly)
 
             Setting fromEntityId and toEntityId 
             (I.E start/leftmost entity, and end/rightmost entity this variant covers)
@@ -2729,6 +2729,7 @@ def initializeVariants(sequence):
         variant configuration
     """
     debug.debugPrint("initializeVariants START", "FUNCTION")
+
     for a in sequence["actionList"]:
         if a["type"] == "variant":
             initializeVariant(sequence, a)
@@ -2820,10 +2821,10 @@ def determineHeightOfSequence(sequence):
 
     for action in sequence["actionList"]:
         if action["type"] == "on":
-            totalHeight += action["height"]
+            totalHeight += action["size"][1]
 
         elif action["type"] == "communication":
-            totalHeight += action["height"]
+            totalHeight += action["size"][1]
 
         elif action["type"] == "variant":
             totalHeight += action["size"][1]

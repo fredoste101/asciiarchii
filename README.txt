@@ -9,6 +9,8 @@ At least that's the main idea.
 Also get some meta data to feed vim to later be able
 to connect the sequence flow to code.
 
+Now also runs with YAML! Yeah!
+
 ===== Introduction =====
 
 
@@ -25,6 +27,7 @@ So, it would generate something like this:
       |                 |
                         
 
+#TODO: move this section to some architectural description of the problem domain instead.
 So how to do this?
 
 
@@ -279,7 +282,7 @@ Things that I want to do to increase functionality
  To jump to send-point and receive point with graphical ting
 
    |            |
-  +-+          +-+
+  +-+   COM    +-+
   |S| -------> |R|
   +-+          +-+
    |            |
@@ -356,6 +359,9 @@ See README.txt in test/ directory
 
 * If there is a empty branch above one that is filled,
   it will not be pretty... I.E it will break a bit.
+
+* If you don't have yaml in python, you won't be able to use yaml...
+  Tests will fail also, but it should be fine to use json.
 
 
 === Future ===

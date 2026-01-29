@@ -10,6 +10,14 @@ import os
 
 import debug 
 
+_yamlEnabled = False
+
+try:
+    import yaml
+    _yamlEnabled = True
+except ImportError as e:
+    print("NOTE: could not import yaml")
+
 
 def prepareCLIArguments():
     """
@@ -102,11 +110,32 @@ def main():
         sys.exit(0)
 
     if not cliArgs.file:
-        print("NEED A JSON FILE TO PARSE.\nPlease provide one with\n\n--file <jsonFile>\n")
+        print("NEED A JSON FILE TO PARSE.\nPlease provide one with\n\n--file <jsonFile>\n", file=sys.stderr)
         sys.exit(1)
 
     with open(cliArgs.file, "r") as inputfile:
-        config = json.loads(inputfile.read())
+
+        if cliArgs.file.split(".")[1] == "yaml":
+            if not _yamlEnabled:
+                print("yaml could not be imported and thus is disabled. "\
+                      "Try pip install yaml or something I don't know...", file=sys.stderr)
+                sys.exit(1)
+
+            config = yaml.safe_load(inputfile)
+
+            #print(config)
+
+        elif cliArgs.file.split(".")[1] == "json":
+            config = json.loads(inputfile.read())
+
+        else:
+            print("WRONG FORMAT ON FILE. "\
+                  "NEED A JSON (OR YAML) FILE TO PARSE.\n"\
+                  "Please provide one with\n\n--file <jsonFile>\n", 
+                  file=sys.stderr)
+
+            sys.exit(1)
+            
     
     path = os.path.dirname(cliArgs.file) 
 

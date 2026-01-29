@@ -1340,6 +1340,8 @@ def getEntityCC(sequence, firstEntity, secondEntity):
         Thus this function gives the CC as it is right at this moment in the process
 
         Added unit test for this one since I messed it up first... :(
+
+        Unit Test: test_getEntityCC
     """
 
     if firstEntity == secondEntity:

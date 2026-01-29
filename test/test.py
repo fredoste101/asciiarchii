@@ -3,18 +3,30 @@
 
     Run with:
         python3.6 -m asciiarchii.test.test
+
+    Or single test case
+        python3.6 -m asciiarchii.test.test Test.<myCase>
+        
 """
 
 import unittest
 import os
 import json
+import sys
+import yaml
+import argparse
 
 #Import the functionality to test.
 from ..sequence import generateSequence 
 from ..sequence import getSequenceGraph 
 from ..sequence import getEntityCC 
 
+#_verbose = False
 
+def testPrint(msg):
+    global _verbose
+    if _verbose:
+        print(msg)
 
 class Test(unittest.TestCase):
 
@@ -30,6 +42,9 @@ class Test(unittest.TestCase):
             I know this because of empiric research done over a number of hours.
             A final conclusion was reached, and is as follows: I'm stupid.
         """
+
+        testPrint("test_getEntityCC START")
+        
 
         with open(self.testFilePath + "/ccTest.json", "r") as testFile:
             inputData = json.loads(testFile.read())
@@ -58,13 +73,15 @@ class Test(unittest.TestCase):
                     cc = getEntityCC(sequence, e1, e2)
                     self.assertEqual(expectedValueListList[i][j], cc)
 
+        testPrint("test_getEntityCC END")
+
 
     def test_full_sequence_output(self):
         """
             Run a full sequence Generation and string-getting,
             and then compare to expected output.
 
-            Only test the dislplayed graph. 
+            Only test the displayed graph. 
             No attributes like color and such.
             Will implicitly check padding and margin and such though.
 
@@ -72,18 +89,34 @@ class Test(unittest.TestCase):
                 1. generating a graph from an input file
                 2. inspecting manually that everything looks proper in the output
                 3. putting that input file -> output in the test framework
+                4. we now compare the test-output to the previous test-output (I.E it is regressions test)
 
             Thus, if the inspection missed errors in the graph,
             the test will be incorrectly made. Does that make sense? 
+
+            If not, the test will protect against new features breaking old ones.
+            Nota Bene: I have not tested every edge case scenario. Might be bugs here and there.
+            Correction: There is guaranteed bugs here and there.
         """
+        testPrint("test_full_sequence_output START")
 
         for (path, dirList, fileList) in os.walk(self.testFileDir):
             for f in fileList:
-                if f.endswith(".json"):
-                    #print(f"Testing {path} {f}")
+                if f.endswith(".json") or f.endswith(".yaml"):
+                    testPrint(f"Testing {path} {f}")
                 
                     with open(path + "/" + f, "r") as testFile:
-                        inputData = json.loads(testFile.read())
+                        fileExtension = f.split(".")[1]
+
+                        if fileExtension == "json":
+                            inputData = json.loads(testFile.read())
+
+                        elif fileExtension == "yaml":
+                            inputData = yaml.safe_load(testFile) 
+
+                        else:
+                            print("ERROR IN TEST-CODE: file extension not known", 
+                                  file=sys.stderr) 
 
                     sequence = generateSequence(inputData) 
 
@@ -97,20 +130,40 @@ class Test(unittest.TestCase):
                         result = (expectedString == actualString)
 
                         if not result:
-                            print("EXPECTED:")
-                            print(expectedString)
-                            print("ACTUAL:")
-                            print(actualString)
+                            testPrint("FAILED")
+                            testPrint("EXPECTED:")
+                            testPrint(expectedString)
+                            testPrint("ACTUAL:")
+                            testPrint(actualString)
+
+                        else:
+                            testPrint("PASSED")
                         
                         self.assertTrue(result, f"See earlier messages for error.\n" \
-                                                f"TEST NAME: {sequence['name']}\nTEST DESCRIPTION: {sequence['description']}")
-                
+                                                f"TEST NAME: {sequence['name']}\n"\
+                                                f"TEST DESCRIPTION: {sequence['description']}")
 
             self.assertTrue(True)
 
+        testPrint("test_full_sequence_output END")
 
 
 if __name__ == "__main__":
+    argParser = argparse.ArgumentParser(description="hej") 
+    
+    argParser.add_argument("--verbose", action="store_true")
+
+    argParser.add_argument("unittest_args", nargs="*")
+
+    parsedArgs = argParser.parse_args()
+
+    global _verbose
+    _verbose = False
+
+    if parsedArgs.verbose:
+        _verbose = True
+
+    sys.argv[1:] = parsedArgs.unittest_args 
     unittest.main()
 
 

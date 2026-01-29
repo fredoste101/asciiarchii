@@ -18,3 +18,4 @@ runTest.sh Test.<testCase>
 
 
 TODO: add options to get (debug) prints when running.
+Yes very good idea!

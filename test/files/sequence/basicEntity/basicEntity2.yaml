@@ -1,0 +1,15 @@
+name: basicEntity2
+
+description: basic test with yaml
+
+itemList:
+  -
+    id: 0
+    type: entity
+    name: AcToR
+    padding: [0,1,0,1]
+
+actionList: []
+
+marginToFirstAction:    0
+marginAfterLastAction:  0

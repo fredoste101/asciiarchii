@@ -15,13 +15,13 @@
 			{"name":"topLvl", 
 			 "actionList":
 			 [
-				
-						{
-						 "type":"communication", 
-						 "content":"message", 
-						 "fromEntityId":0, 
-						 "toEntityId":1
-						}
+				{
+				 "type":"communication", 
+				 "content":"message", 
+				 "fromEntityId":0, 
+				 "toEntityId":1,
+				 "margin":[0,0,1,0]
+				}
 			 ]
 			}
 		 ]

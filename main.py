@@ -26,22 +26,26 @@ def prepareCLIArguments():
     """
 
     helpString = "ASCII-Architect (aa)\n\nCreate a sequence diagram in ASCII.\n" \
-                 "Configuration is done with json.\nglhf" \
+                 "Configuration is done with json OR yaml.\n"\
+                 "glhf" \
                  "\n\n--- generated usage ---"
 
-    usageExamplesString = "Stop it. Get some help:\n" \
-                          "aa --help\n\n" \
+    usageExamplesString = "Stop it. Get some help:\n\n" \
+                          "\taa --help\n\n" \
 \
-                          "Simply display the graph to stdout:\n" \
-                          "aa --file mySequence.json --display\n\n" \
+                          "Simply display the graph to stdout:\n\n" \
+                          "\taa --file mySequence.json --display\n\n" \
 \
-                          "Save the resulting json and ascii graph in two separate file:\n" \
-                          "aa --file inputSequence.json --jsonOut outputSequence.json --sequenceOut sequence.txt\n\n" \
+                          "Save the resulting json and ascii graph in two separate file:\n\n" \
+                          "\taa --file inputSequence.json --jsonOut outputSequence.json --sequenceOut sequence.txt\n\n" \
 \
-                          "Get a json-syntax description with examples:\n" \
-                          "aa --getInputSyntax"
+                          "Get a json-syntax description with examples (pipe into less -S):\n\n" \
+                          "\taa --getInputSyntax\n\n"\
+\
+                          "Running with debug on:\n\n"\
+                          "\taa --file inputSequence.json --debug --debugType FUNCTION --debutType VARIANT"
 
-    epilogString = "\n\n--- Epilog ---\n\nNB: PRE BETA VERSION.\nuse at own discretion." \
+    epilogString = "\n\n--- Epilog ---\n\nNB: PRE BETA VERSION.\n\nuse at own discretion." \
                    "\n\n--- Example usages ---\n\n" \
                    + usageExamplesString + \
                    "\n\n--- contact ---\n\nfredrik.ostdahl@gmail.com"
@@ -51,12 +55,13 @@ def prepareCLIArguments():
                                         epilog=epilogString)
 
     argParser.add_argument("--file", 
-                           help="The configuration file. Should be json\n\n")
+                           help="The configuration file. Should be json OR yaml\n\n")
 
     argParser.add_argument("--getInputSyntax", 
                            action="store_true",
                            help="Get a help-text describing the input syntax,\n"\
-                                "as well as example input->outputs.\n\nprotip: pipe this into less.\n\n", 
+                                "as well as example input->outputs.\n\nprotip: pipe this into less.\n"\
+                                "Caution not complete due to the authors lack of discipline...\n\n", 
                            default=False)
 
     argParser.add_argument("--display", 
@@ -70,7 +75,8 @@ def prepareCLIArguments():
 
     argParser.add_argument("--jsonOut", 
                            metavar="<filename.json>",
-                           help="The generated json will be saved into this file\n\n")
+                           help="The generated json will be saved into this file\n\n"\
+                                "This is used in vim for example to create magic\n\n")
 
     argParser.add_argument("--debug", 
                            action="store_true",
@@ -110,7 +116,8 @@ def main():
         sys.exit(0)
 
     if not cliArgs.file:
-        print("NEED A JSON FILE TO PARSE.\nPlease provide one with\n\n--file <jsonFile>\n", file=sys.stderr)
+        print("NEED A JSON (OR YAML) FILE TO PARSE.\nPlease provide one with\n\n--file <jsonFile|yamlFile>\n", 
+              file=sys.stderr)
         sys.exit(1)
 
     with open(cliArgs.file, "r") as inputfile:

@@ -233,7 +233,9 @@ An example of a variant with 2 branches:
 
 =============================================
 
+
 === INPUT SYNTAX ===
+
 See the file inputSyntax.txt in the same directory as this :)
 
 Also now allows something called auxiliaryFiles,
@@ -243,24 +245,14 @@ any auxiliary json-file.
 
 All substitutions should start with "__aux__" for some reason... is this really necessary?
 
+TODO: Also, now that we can configure using yaml, need some more info on that...
+
 TODO: need to add more explanation about auxiliary files... With example usages
 
 
 === VIM ===
-How do we link the sequence to vim?
-By using special json-attributes, 
-we can create:
-colors when opening the sequence in vim,
-and
-create (custom) commands to be run at certain conditions.
 
-This section needs mopped. 
-Mabye even a separate .txt-file with some descriptions in it.
-
-Yeah, well I need to explain the commands at least.
-It might not be super intuitive for someone else I suppose.
-To be hones its not intuitive to me either... but its pretty nice.
-
+See README_vim.txt
 
 
 === TODO LIST ===
@@ -278,8 +270,8 @@ Things that I want to do to increase functionality
   It will be to slow I think.
 
 
-*Sender received for communications. 
- To jump to send-point and receive point with graphical ting
+* Sender received for communications. 
+  To jump to send-point and receive point with graphical ting
 
    |            |
   +-+   COM    +-+

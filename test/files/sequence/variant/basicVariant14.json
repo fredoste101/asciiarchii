@@ -16,29 +16,33 @@
 			{"name":"frwd", 
 			 "actionList":
 			 [
-						{
-						 "type":"communication", 
-						 "content":"message", 
-						 "fromEntityId":0, 
-						 "toEntityId":1
-						}
+				{
+				 "type":"communication", 
+				 "content":"message", 
+				 "fromEntityId":0, 
+				 "toEntityId":1,
+				 "margin":[0,0,1,0]
+				}
 			 ]
 			},
 			{"name":"rvrs", 
 			 "actionList":
 			 [
-						{
-						 "type":"communication", 
-						 "content":"hello", 
-						 "fromEntityId":1, 
-						 "toEntityId":0
-						},
-						{
-						 "type":"communication", 
-						 "content":"world", 
-						 "fromEntityId":1, 
-						 "toEntityId":2
-						}
+				{
+				 "type":"communication", 
+				 "content":"hello", 
+				 "fromEntityId":1, 
+				 "toEntityId":0,
+				 "margin":[0,0,1,0]
+				},
+				{
+				 "type":"communication", 
+				 "content":"world", 
+				 "fromEntityId":1, 
+				 "toEntityId":2,
+				 "margin":[0,0,1,0],
+				 "padding":[0,1,0,1]
+				}
 			 ]
 			}
 		 ]

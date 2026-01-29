@@ -16,20 +16,20 @@
 			{"name":"topLvl", 
 			 "actionList":
 			 [
-				
-						{
-						 "type":"communication", 
-						 "content":"message", 
-						 "fromEntityId":0, 
-						 "toEntityId":1
-						},
-						{
-						 "type":"communication", 
-						 "content":"forward", 
-						 "fromEntityId":1, 
-						 "toEntityId":2
-						}
-
+				{
+				 "type":"communication", 
+				 "content":"message", 
+				 "fromEntityId":0, 
+				 "toEntityId":1,
+				 "margin":[0,0,1,0]	
+				},
+				{
+				 "type":"communication", 
+				 "content":"forward", 
+				 "fromEntityId":1, 
+				 "toEntityId":2,
+				 "margin":[0,0,1,0]	
+				}
 			 ]
 			}
 		 ]

@@ -132,9 +132,23 @@ class Test(unittest.TestCase):
                         if not result:
                             testPrint("FAILED")
                             testPrint("EXPECTED:")
+
+                            expectedFileName = self.testFilePath + "/expected.txt" 
+                            actualFileName = self.testFilePath + "/actual.txt" 
+
+                            with open(expectedFileName, "w") as expectedFile:
+                                expectedFile.write(expectedString)
+
                             testPrint(expectedString)
                             testPrint("ACTUAL:")
                             testPrint(actualString)
+
+                            with open(actualFileName, "w") as actualFile:
+                                actualFile.write(actualString)
+
+                            testPrint(f"Diff {expectedFileName} with {actualFileName}")
+                            testPrint(f"FOR EXAMPLE, RUN:\nkdiff3 {expectedFileName} {actualFileName}")
+
 
                         else:
                             testPrint("PASSED")

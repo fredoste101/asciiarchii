@@ -56,12 +56,13 @@ def addCoord(thing, x, y, name):
 def determineHeightsOfHeader(itemList):
     """
         Aight, then this will determine the heights of the top row.
-        I.E actors and such. madderfakking. 
+        I.E entities and such.
 
-        So nice. very good.
+        Basically takes the item (entity/container) with largest height,
+        and returns that height. 
     """
 
-    heightestMf = 0
+    itemWithLargestHeight = 0
 
     for item in itemList:
         h = 0
@@ -72,11 +73,13 @@ def determineHeightsOfHeader(itemList):
         elif item["type"] == "entity":
             h = item["height"]
 
-        if heightestMf <= h:
-            heightestMf = h
-    
+        else:
+            debug.fatalError(f"item of type {item['type']} not supported")
+
+        if itemWithLargestHeight <= h:
+            itemWithLargestHeight = h
         
-    return heightestMf 
+    return itemWithLargestHeight 
 
 
 def determineWidthOfSequence(sequence):
@@ -258,7 +261,7 @@ def setContainerPos(container, pos):
             contentPos[0] += x
 
         else:
-            debug.fataError(f"Unknown type: {item['type']}")
+            debug.fatalError(f"Unknown type: {item['type']}")
 
 
     return [container["size"][0], container["size"][1]]
@@ -280,7 +283,7 @@ def determineRelativePositionOfItems(sequence, pos):
             pos[0] += width
 
         else:
-            debug.fataError(f"Unknown type: {item['type']}")
+            debug.fatalError(f"Unknown type: {item['type']}")
 
 
 def determineRelativePositionOfOnAction(sequence, onAction, row):
@@ -484,7 +487,7 @@ def determineRelativePositionOfActions(sequence, startRow):
             currentActionRow += action["size"][1]
 
         else:
-            debug.fataError(f"unknown action type {action['type']}")
+            debug.fatalError(f"unknown action type {action['type']}")
 
 
 def determineRelativePositions(sequence):
@@ -628,7 +631,7 @@ def getCharFromVariantAction(action, x, y):
                         if r[0]:
                             return r
                     else:
-                        debug.fataError(f"this should have been caught earlier... type {branchAction['type']} is illegal")
+                        debug.fatalError(f"this should have been caught earlier... type {branchAction['type']} is illegal")
 
                 if "branchBorderStart" in branch:
                     if y == branch["branchBorderStart"][1]:
@@ -670,7 +673,7 @@ def getCharFromAction(action, x, y):
             return r
 
     else:
-        debug.fataError(f"Not handled action {action['type']}")
+        debug.fatalError(f"Not handled action {action['type']}")
 
     return [False, False]
 
@@ -720,7 +723,7 @@ def getCharFromItem(item, x, y):
                 return r
 
     else:
-        debug.fataError(f"Unknown type: {item['type']}")
+        debug.fatalError(f"Unknown type: {item['type']}")
 
     return [False, False]
 
@@ -988,23 +991,24 @@ def determineSizeOfEntity(entity):
 
 def determineSizeOfCommunicationAction(action):
     """
-        Get the size of a "communication" action
+        Get the (minimum) size of a "communication" action
 
-        return the size as:
+        return the (minimum) size as:
         [width, height]
     """
 
-    action["width"] = len(action["content"]) + 2  #This is a travesty :( should be padding instead
+    action["width"] = len(action["content"]) +\
+                        action['padding'][1] + action['padding'][3] +\
+                        action['margin'][1] + action['margin'][3] 
 
-    if "margin" not in action:
-        action["margin"] = [0,0,1,0]
-
-    action["height"] = 2 + action["margin"][2] + action["margin"][0]
+    action["height"] = 2 + \
+                        action["margin"][2] + action["margin"][0] +\
+                        action["padding"][0] + action["padding"][2] #Padding in height is a bit tricky on the communication...
 
     action["size"] = [action["width"], action["height"]]
 
     debug.debugPrint(f"communication-action: {action['content']} determined size: {action['size']}", 
-               "SIZING")
+                     "SIZING")
 
     return action["size"] 
 
@@ -1014,6 +1018,7 @@ def determineSizeOfOnAction(action):
         Get the size (width, height) of an "on"-action.
 
         Return the size calculated as:
+
         [width, height]
     """
 
@@ -1036,9 +1041,9 @@ def determineSizeOfOnAction(action):
     #Now, content is only allowed to be 1 high :/
     contentHeight = 1
 
-    height = contentHeight + action["border"][0] + action["border"][2] + \
+    height = contentHeight + action["border"][0]  + action["border"][2] + \
                              action["padding"][0] + action["padding"][2] + \
-                             action["margin"][0] + action["margin"][2]
+                             action["margin"][0]  + action["margin"][2]
 
     action["size"] = [width, height]
 
@@ -1047,14 +1052,14 @@ def determineSizeOfOnAction(action):
     action["height"] = height
 
     debug.debugPrint(f"on-action: {action['content']} determined size: {action['size']}", 
-               "SIZING")
+                     "SIZING")
 
     return [width, height]
 
 
 def determineSizeOfActions(sequence):
     """
-        Determine both the height and width of actions.
+        Determine both the height and width of 'primitive' actions (Not variants).
 
         The width can later be used to resize the width of entities.
         This can be a little bit tricky, but is doable.
@@ -1069,7 +1074,8 @@ def determineSizeOfActions(sequence):
             determineSizeOfCommunicationAction(action)
             
         else:
-            debug.fataError("error only 'on', and 'communication' supported now") 
+            debug.fatalError(f"ERROR only 'on', and 'communication' supported now. "\
+                             f"Type: {action['type']} is not supported") 
 
 
 def determineSizeOfVariantAction(action):
@@ -1080,7 +1086,7 @@ def determineSizeOfVariantAction(action):
         calculating the sizes of the induvidual items 
         and take sums and max of certain values
     
-        This is not called anywhere?
+        This is not called anywhere? TODO: REMOVE
     """
 
     if "border" not in action:
@@ -1111,7 +1117,7 @@ def determineSizeOfVariantAction(action):
                 [width, height] = determineSizeOfVariantAction(action)
         
             else:
-                debug.fataError(f"Unknown action type: {action['type']}")
+                debug.fatalError(f"Unknown action type: {action['type']}")
 
             actionWidth += width
 
@@ -1123,9 +1129,9 @@ def getEntityWithId(sequence, id):
                 return i
 
         else:
-            debug.fataError("still only entities allowed")
+            debug.fatalError("still only entities allowed")
     
-    debug.fataError(f"entity with id {id} does not exist")
+    debug.fatalError(f"entity with id {id} does not exist")
 
 
 def getItemsBetween(sequence, entityAId, entityBId):
@@ -1161,10 +1167,10 @@ def getItemsBetween(sequence, entityAId, entityBId):
             entityList.append(entity)
 
     if len(entityList) != 2:
-        debug.fataError("must have at least 2 entities between each other")
+        debug.fatalError("must have at least 2 entities between each other")
 
     if entityList[0] == entityList[1]:
-        debug.fataError("Both entities cannot be the same though...")
+        debug.fatalError("Both entities cannot be the same though...")
 
     familyTreeListList = [getFamiliyTreeList(entityList[0]), getFamiliyTreeList(entityList[1])]
 
@@ -1207,7 +1213,7 @@ def getCommonAncestor(familyTreeAList, familyTreeBList):
         if ancestor in familyTreeBList:
             return ancestor
 
-    debug.fataError("two entites without common ancestor... how defuq is that possible :(")
+    debug.fatalError("two entites without common ancestor... how defuq is that possible :(")
 
 
 def getRightTraversalDistance(item, stopItem):
@@ -1237,7 +1243,7 @@ def getRightTraversalDistance(item, stopItem):
         #nextItem must be a container... right?
 
         if nextItem["type"] != "container":
-            debug.fataError("must be a container, or something is terribly broken :(")
+            debug.fatalError("must be a container, or something is terribly broken :(")
 
 
         #Add the right side of this container
@@ -1286,7 +1292,7 @@ def getLeftTraversalDistance(item, stopItem):
         #nextItem must be a container... right?
 
         if nextItem["type"] != "container":
-            debug.fataError("must be a container, or something is terribly broken :(")
+            debug.fatalError("must be a container, or something is terribly broken :(")
 
 
         #Add the left side of this container
@@ -1465,10 +1471,10 @@ def getFromAndToEntities(sequence, fromEntityId, toEntityId):
             entityList.append(entity)
 
     if len(entityList) != 2:
-        debug.fataError(f"Could not find entites for ID from: {fromEntityId} and to: {toEntityId}")
+        debug.fatalError(f"Could not find entites for ID from: {fromEntityId} and to: {toEntityId}")
 
     if entityList[0]["id"] == entityList[1]["id"]:
-        debug.fataError(f"two entities share the same ID: {entityList[0]['id']}")
+        debug.fatalError(f"two entities share the same ID: {entityList[0]['id']}")
 
     return entityList
 
@@ -1591,9 +1597,9 @@ def commSorter(i):
     return i["numSpanned"]
 
 
-def sortCommunications(sequence):
+def sortCommunicationsByNumberOfSpannedEntities(sequence):
     """
-        This will sort on the side of the actual,
+        This will sort communications by the number of entities they span,
         in order to minimize the width-expansion due to communications being to big to fit.
 
         So in essence,
@@ -1611,6 +1617,7 @@ def sortCommunications(sequence):
             communicationsList.append(action)
 
     communicationsList.sort(key=commSorter)
+
     return communicationsList 
 
 
@@ -2198,7 +2205,7 @@ def resizeItemsByCommunicationActions(sequence):
 
         TODO: give example
     """
-    communicationList = sortCommunications(sequence)
+    communicationList = sortCommunicationsByNumberOfSpannedEntities(sequence)
 
     for action in communicationList:
         if action["type"] == "communication":
@@ -2278,6 +2285,7 @@ def resizeItemWidth(sequence):
         Light weight.
     """
     debug.debugPrint("resizeItemWidth BEGIN", "FUNCTION")
+
     debug.debugPrint("RESIZING BEGIN", "RESIZING")
 
     resizeItemsByOnActions(sequence)
@@ -2426,7 +2434,7 @@ def getFirstEntityInSet(sequence, s):
         if i["id"] in s:
             return i["id"]
 
-    debug.fataError(f"Could not get any entity with id in set: {s}")
+    debug.fatalError(f"Could not get any entity with id in set: {s}")
 
 
 def getLastEntityInSet(sequence, s):
@@ -2438,7 +2446,7 @@ def getLastEntityInSet(sequence, s):
         if i["id"] in s:
             return i["id"]
 
-    debug.fataError(f"Could not get any entity with id in set: {s}")
+    debug.fatalError(f"Could not get any entity with id in set: {s}")
 
 
 def setStartAndEndEntityForVariant(sequence, variant):
@@ -2481,7 +2489,7 @@ def setStartAndEndEntityForVariant(sequence, variant):
                 entityIdSet.add(branchAction["toEntityId"])
 
             else:
-                debug.fataError(f"type {branchAction['type']}")
+                debug.fatalError(f"type {branchAction['type']}")
     
     variant["fromEntityId"] = getFirstEntityInSet(sequence, entityIdSet)
     variant["toEntityId"]   = getLastEntityInSet(sequence, entityIdSet)
@@ -2510,14 +2518,15 @@ def getOnActionSides(onAction):
                  |                  |
 
       returns [3, 2]             [3, 3]
+
+
+        This then means that we are left-aligned(?!). Is this consistent?
     """
 
     sizeToSplit = onAction["size"][0] - 1 #Remove the middleCol from the equation
 
     left    = int((sizeToSplit) / 2)
     right   = int((sizeToSplit) / 2)
-
-    #print(f"On Action: left: {left} right: {right}")
 
     if onAction["size"][0] % 2 == 0:
         left += 1
@@ -2533,20 +2542,20 @@ def setVariantSides(sequence, variant):
         so we have an entity, and a variant around it.
         left (L) and right (R) will be as follows:
 
-        +---+
-        | E |
-        +---+
-          |
-          | 
-    +---+------+
-    | V | |    |
-    +---+ |    |
-    |     |    |
-    +----------+
-    ^    ^ ^   ^
-    |    | |   |
-    +----+ +---+
-      L      R
+             +---+
+             | E |
+             +---+
+               |
+               | 
+         +---+------+ <-+
+         | V | |    |   |
+         +---+ |    |   +- Variant
+         |     |    |   |
+         +----------+ <-+
+         ^    ^|^   ^
+         |    |||   |
+         +----+|+---+
+           L   |  R
 
         And if the variant covers multiple entities, the same concept applies,
         but L will be to the left of the left most entity (fromEntityId),
@@ -2636,11 +2645,11 @@ def setVariantSides(sequence, variant):
                     
 
             elif branchAction["type"] == "communication":
-                #A communication take no room on sides
+                #A communication take no room on sides (AT LEAST NOT YET!)
                 branchHeight += branchAction["size"][1]
 
             else:
-                debug.fataError(f"ERROR: type {branchAction['type']}")
+                debug.fatalError(f"ERROR: type {branchAction['type']}")
 
             branch["size"][1] = branchHeight
 
@@ -2698,6 +2707,7 @@ def initializeVariant(sequence, variant):
             It also calculates the height of the variant, since that will not change later
     """
     debug.debugPrint("initializeVariant START", "FUNCTION") 
+
     setVariantStyle(variant)
 
     setStartAndEndEntityForVariant(sequence, variant)
@@ -2742,7 +2752,7 @@ def getActionsInVariant(variant):
                 aList.extend(getActionsInVariant(branchAction))
 
             else:
-                debug.fataError(f"Not valid type: {branchAction['type']}. "
+                debug.fatalError(f"Not valid type: {branchAction['type']}. "
                            f"Valid types are: 'variant', 'on', 'communication'")
 
     return aList
@@ -2751,10 +2761,16 @@ def getActionsInVariant(variant):
 def buildRawActionList(sequence):
     """
         the naming is not perfect... But rawActionList are all non-container-type actions...
-        easy right :D I.E all actions not of type variant right now
+        easy right :D 
+        I.E all actions not of type variant right now
 
-        So this function builds that list => sequence['rawActionList']
-        with all 'atomic' actions in order of appearance
+        So this function builds the list => sequence['rawActionList']
+        with all 'atomic' actions in order of appearance.
+    
+        This will allow us to determine the size of these actions later,
+        before we do the 'container'-type actions,
+        since the 'container'-type actions sizes depend on the size
+        of these... I don't know if this is smart, but it works.
     """
     rawActionList = []
 
@@ -2766,7 +2782,7 @@ def buildRawActionList(sequence):
             rawActionList.extend(getActionsInVariant(action))
 
         else:
-            debug.fataError(f"Unknown action tpe {type['type']}")
+            debug.fatalError(f"Unknown action tpe {type['type']}")
 
     sequence["rawActionList"] = rawActionList        
 
@@ -2783,6 +2799,9 @@ def initializeActions(sequence):
     debug.debugPrint("initializeActions BEGIN", "FUNCTION")
 
     buildRawActionList(sequence)
+
+    for action in sequence["rawActionList"]:
+        setStyle(action) 
 
     determineSizeOfActions(sequence)
 
@@ -2810,7 +2829,7 @@ def determineHeightOfSequence(sequence):
             totalHeight += action["size"][1]
 
         else:
-            debug.fataError(f"unknown action type: {action['type']}")
+            debug.fatalError(f"unknown action type: {action['type']}")
 
     sequence["height"] = totalHeight
     
@@ -2994,7 +3013,7 @@ def addCommandFromThing(sequence, thing):
                             
                     #Must get coordinatelist from content. is already there :O                    
                 else:
-                    debug.fataError(f"commands of category: {commandTarget} NOT SUPPORTED")
+                    debug.fatalError(f"commands of category: {commandTarget} NOT SUPPORTED")
 
 
 def initializeVimCommands(sequence):
@@ -3018,6 +3037,9 @@ def initializeVimCommands(sequence):
 def initializeHeader(sequence):
     """
         Initialize values in the header of the sequence.
+
+        The header is the part where entities resides.
+        I.E entities and containers with entities within.
     """
     debug.debugPrint("initializeHeader BEGIN", "FUNCTION")
     sequence["header"] = {}

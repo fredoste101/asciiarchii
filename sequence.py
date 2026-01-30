@@ -375,9 +375,6 @@ def determineRelativePositionOfCommunicationAction(sequence, communication, row)
         communication["contentStartPos"] = [communicationMiddle - int((contentLength) / 2), contentRow]
         communication["contentEndPos"]   = [communicationMiddle + int((contentLength - 1) / 2), contentRow]
         
-    
-    [e1, e2] = getFromAndToEntities(sequence, fromEntity["id"], toEntity["id"]) 
-
 
 def determineRelativePositionOfVariantAction(sequence, variant, row):
     """
@@ -385,11 +382,11 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
     """
     action = variant
 
-    fromEntity = getEntityWithId(sequence, action["fromEntityId"])
-    toEntity = getEntityWithId(sequence, action["toEntityId"])
+    startEntity  = getEntityWithId(sequence, action["startEntityId"])
+    endEntity    = getEntityWithId(sequence, action["endEntityId"])
 
-    startCol = fromEntity["timeLineCol"] - action["left"]
-    endCol   = toEntity["timeLineCol"] + action["right"]
+    startCol = startEntity["timeLineCol"] - action["left"]
+    endCol   = endEntity["timeLineCol"] + action["right"]
                                                     
     action["startPos"]          = [startCol, row]
     action["endPos"]            = [startCol + action["size"][0], row + action["size"][1] - 1] 
@@ -965,6 +962,8 @@ def sizeEntity(entity):
 
     entity["widthNoMargin"] = entity["width"] - entity["margin"][1] - entity["margin"][3]
 
+    #TODO: change left and right
+
 
 def resizeEntity(entity):
     """
@@ -972,8 +971,8 @@ def resizeEntity(entity):
         but with a different debugPrint
     """
     oldSize = copy.copy(entity["size"])
-    sizeEntity(entity)
 
+    sizeEntity(entity)
 
     if oldSize[0] != entity["size"][0] or oldSize[1] != entity["size"][1]:
 
@@ -989,20 +988,21 @@ def determineSizeOfEntity(entity):
     debug.debugPrint(f"entity {entity['name']} size: {entity['size']}", "SIZING")
 
 
-def determineSizeOfCommunicationAction(action):
+def setMinimumSizeOfCommunicationAction(action):
     """
-        Get the (minimum) size of a "communication" action
-
-        return the (minimum) size as:
-        [width, height]
+        Set the (minimum) size of a "communication" action.
+        The height will never by changed, but,
+        the width might change later during resizing.
+        This is because entity CC can change due to 
+        a variety of reasons.
     """
 
     width = len(action["content"]) +\
              action['padding'][1] + action['padding'][3] +\
-             action['margin'][1] + action['margin'][3] 
+             action['margin'][1]  + action['margin'][3] 
 
     height = 2 + \
-              action["margin"][2] + action["margin"][0] +\
+              action["margin"][2]  + action["margin"][0] +\
               action["padding"][0] + action["padding"][2] #Padding in height is a bit tricky on the communication...
 
     action["size"] = [width, height]
@@ -1010,16 +1010,13 @@ def determineSizeOfCommunicationAction(action):
     debug.debugPrint(f"communication-action: {action['content']} determined size: {action['size']}", 
                      "SIZING")
 
-    return action["size"] 
 
-
-def determineSizeOfOnAction(action):
+def setSizeOfOnAction(action):
     """
-        Get the size (width, height) of an "on"-action.
-
-        Return the size calculated as:
-
-        [width, height]
+        Set the size (width, height) of an "on"-action.
+        This will not change later, as oppsed to for example
+        communication actions, which must be resized if
+        entity CC changes.
     """
 
     if "border" not in action:
@@ -1054,6 +1051,75 @@ def determineSizeOfOnAction(action):
     return [width, height]
 
 
+def setOnActionSides(onAction):
+    """
+        Set how much this on-action sticks out each side from middle column.
+        
+        This is including margin, border, padding.
+        Example (no left/right-margin):
+
+                 |                  |
+                 |                  |
+              +----+             +-----+
+              |    |             |     |
+              +----+             +-----+
+               L | R              L | R
+
+              [3, 2]             [3, 3]
+                
+    
+        Sets the attributes:
+            left (L)
+            right (R)
+
+        for this action.
+        Note that we are left-biased, I.E uneven size results in
+        more left than right.
+    """
+
+    sizeToSplit = onAction["size"][0] - 1 #Remove the middleCol from the equation
+
+    left    = int((sizeToSplit) / 2)
+    right   = int((sizeToSplit) / 2)
+
+    if onAction["size"][0] % 2 == 0:
+        left += 1
+
+    onAction["left"]  = left
+    onAction["right"] = right
+
+
+def setCommunicationSides(communication):
+    """
+        As of now communication has no sides
+    """
+
+    communication["left"]  = 0
+    communication["right"] = 0
+
+
+def setSidesOfActions(sequence):
+    """
+        Set sides of primitive actions.
+
+        This is doable, since it will never change.
+        What will change are the sides of ENTITIES,
+        NOT actions.
+
+        This should simplify things considerably, at least in my imagination
+    """
+
+    for action in sequence["primitiveActionList"]:
+        if action["type"] == "on":
+            setOnActionSides(action)
+        
+        elif action["type"] == "communication":
+            setCommunicationSides(action)
+    
+        else:
+            debug.fataError(f"Type {action['type']} does not belong in primitiveActionList")
+
+
 def determineSizeOfActions(sequence):
     """
         Determine both the height and width of 'primitive' actions (Not variants).
@@ -1062,61 +1128,17 @@ def determineSizeOfActions(sequence):
         This can be a little bit tricky, but is doable.
         
     """
-    for action in sequence["rawActionList"]:
+    for action in sequence["primitiveActionList"]:
 
         if action["type"] == "on":
-            determineSizeOfOnAction(action)
+            setSizeOfOnAction(action)
 
         elif action["type"] == "communication":
-            determineSizeOfCommunicationAction(action)
+            setMinimumSizeOfCommunicationAction(action)
             
         else:
             debug.fatalError(f"ERROR only 'on', and 'communication' supported now. "\
                              f"Type: {action['type']} is not supported") 
-
-
-def determineSizeOfVariantAction(action):
-    """
-        Get the size of a variant
-
-        TODO: this will involve going through the branchList
-        calculating the sizes of the induvidual items 
-        and take sums and max of certain values
-    
-        This is not called anywhere? TODO: REMOVE
-    """
-
-    if "border" not in action:
-        action["border"] = [1, 1, 1, 1]
-
-    if "padding" not in action:
-        action["padding"] = [0, 0, 0, 0]
-
-    if "margin" not in action:
-        action["margin"] = [0, 0, 0, 0]
-
-
-    width = 0
-
-    #Go through all branches in variant
-    for branch in action["branchList"]:
-        nameLen = len(branch["name"]) 
-
-        actionWidth = 0
-        for action in branch["actionList"]:
-            if action["type"] == "on":
-                [width, height] = determineSizeOfOnAction(action)
-            
-            elif action["type"] == "communication":
-                [width, height] = determineSizeOfCommunicationAction(action)
-    
-            elif action["type"] == "variant":
-                [width, height] = determineSizeOfVariantAction(action)
-        
-            else:
-                debug.fatalError(f"Unknown action type: {action['type']}")
-
-            actionWidth += width
 
 
 def getEntityWithId(sequence, id):
@@ -1221,7 +1243,6 @@ def getRightTraversalDistance(item, stopItem):
 
     if item["parent"] == stopItem:
         return 0
-
     
     nextItem = item["nextSibling"] 
 
@@ -1453,22 +1474,38 @@ def getEntityCC(sequence, firstEntity, secondEntity):
     return cc
 
 
-def getFromAndToEntities(sequence, fromEntityId, toEntityId):
+def getStartAndEndEntities(sequence, entity1Id, entity2Id):
     """
         Get two entities, in order of appearance in the entityList.
         That means that the from/to order could be "swapped"
 
+        Consider this scenario of entities (lets assume name and id are the same):
+
+        +---+    +---+     +---+
+        | A |    | B |     | C |
+        +---+    +---+     +---+
+          |        |         |
+
+        if
+            entity1Id = C
+            entity2Id = A
+
+        then
+            startEntity = A
+            endEntity   = C
+
+
         Returns:
-            [firstEntity, secondEntity]
+            [startEntity, endEntiy]
     """
     entityList = []
 
     for entity in sequence["entityList"]:
-        if entity["id"] in [fromEntityId, toEntityId]:
+        if entity["id"] in [entity1Id, entity2Id]:
             entityList.append(entity)
 
     if len(entityList) != 2:
-        debug.fatalError(f"Could not find entites for ID from: {fromEntityId} and to: {toEntityId}")
+        debug.fatalError(f"Could not find entites for ID from: {entity1Id} and to: {entity2Id}")
 
     if entityList[0]["id"] == entityList[1]["id"]:
         debug.fatalError(f"two entities share the same ID: {entityList[0]['id']}")
@@ -1607,7 +1644,7 @@ def sortCommunicationsByNumberOfSpannedEntities(sequence):
     """
     communicationsList = []
 
-    for action in sequence["rawActionList"]:
+    for action in sequence["primitiveActionList"]:
         if action["type"] == "communication":
             numEntitiesSpanned = getEntitiesSpanned(sequence, action) 
             action["numSpanned"] = numEntitiesSpanned
@@ -1625,6 +1662,8 @@ def getVariantContentWidth(variant):
         Content width is the largest branch-name in branchList
         No padding, no margin, no nothing...
         Maybe that is needed for full functionality... who knows.
+    
+        TODO: calculate this once, and set the variant -content-size attribute instead
     """
     contentWidth = 0
     for branch in variant["branchList"]:
@@ -1634,96 +1673,118 @@ def getVariantContentWidth(variant):
     return contentWidth
 
 
-def resizeByVariantSingleEntity(sequence, variant):
+def resizeByVariantSingle(sequence, variant):
     """
         This is a special case.
         
         The variant is only over a single entity
 
-            +---+ 
-            | e |
-            +---+
-           L  |  R
-        <---->|<--->
-        +----------+
-        | B | |    |
-        +---+ |    |
-        |+--------+|
-        || action ||
-        |+--------+|
-        |     |    |
-        +----------+
-              |
-              M
+        The values in below picture refers to the variants values,
+        NOT the entities which has similar types of values.
+        
+
+             +---+ 
+             | e |
+             +---+
+               |
+           L   |   R
+    <--------->|<------->
+        +------------+
+        | B |  |     |
+        +---+  |     |
+        | +--------+ |
+      M |*| action |*| M
+    <-->|^+--------+^|<->
+        ||     |    ||
+        +|----------|+
+        ^|+----|---+|^
+        ||^    m   ^||
+        |||        |||
+        ||+----+---+||
+        ||     |    ||
+        BP     C    PB
+
+        L - left
+        R - right
+        P - padding
+        B - border
+        M - margin
+        m - middlecolumn
+
+        We must make sure that the variant content size
+        is large enough to accomodate its content.
+        Otherwise we will increase C.
+
+        Then;
+
+        Depending on if L (left) and R (right) from m (middleCol)
+        falls within e's (entity's) size (right, left of entity) or not,
+        we might need to resize e (increase its margin). 
+
     
-        Depending on if L (left) and R (right) from M (middleCol)
-        falls within e's (entity's) size (margin+border+padding+content),
-        we need to resize e. 
-    
-        If L is outside of e, then we increase left-padding for e.
-        If R is outside of e, then we increase right-padding for e. 
+        If L is outside of e, then we increase left-margin for e.
+        If R is outside of e, then we increase right-margin for e. 
     """
+
     anyChanges = False
 
-    entity = getEntityWithId(sequence, variant["toEntityId"])
+    entity = getEntityWithId(sequence, variant["endEntityId"])
 
     #Check if variant content can fit at all
 
-    variantElementWidth = variant["border"][1]  + \
+    variantStyleWidth = variant["border"][1]  + \
                           variant["border"][3]  + \
                           variant["padding"][1] + \
                           variant["padding"][3] + \
                           variant["margin"][1]  + \
                           variant["margin"][3]
 
-    widthBySides = variant["left"] + 1 + variant["right"] - 2 #+1 for middle col, -2 for "start"
+    widthForContent = variant["left"] + 1 + variant["right"] - variantStyleWidth 
 
     contentWidth = getVariantContentWidth(variant)
 
-    variantWidth = widthBySides 
-
-    if contentWidth > widthBySides:
+    if contentWidth > widthForContent:
         #Change left and right
-        variantWidth = contentWidth
-        toAdd = contentWidth - widthBySides 
+        toAdd = contentWidth - widthForContent 
+
         debug.debugPrint(f"{variant['branchList'][0]['name']} contentWidth is bigg {contentWidth}", "RESIZE")
+
+        #Add to right and left to accomodate the biggest content (branch-content)
         variant["right"] += int((toAdd + 1) / 2)
         variant["left"]  += int(toAdd / 2)
+
         debug.debugPrint(f"{variant['left']} {variant['right']}", "RESIZE")
+
         anyChanges = True
+
+        withForContent = contentWidth
         
     entitySizeNoCol = entity["size"][0] - 1 #Remove the middle col from the equation
 
-
     #now check if we need to add anything to the entity because of sides
 
-    [entityLeft, entityRight] = getEntitySides(entity)
+    [leftEntitySide, rightEntitySide] = getEntitySides(entity)
 
-    rightEntitySide = entityRight 
-    leftEntitySide  = entityLeft 
-
-    fullLeftSide = variant["left"] + variant["border"][3] + variant["padding"][3] + variant["margin"][3] - 1
-
-    if fullLeftSide > leftEntitySide: 
+    if variant["left"] > leftEntitySide: 
         #Increase margin to make room for the variant
-        entity["margin"][3] += (fullLeftSide - leftEntitySide)
+        entity["margin"][3] += (variant["left"] - leftEntitySide)
         anyChanges = True
         
-    fullRightSide = variant["right"] + variant["border"][1] + variant["padding"][1] + variant["margin"][1] - 1
-    
-    if fullRightSide > rightEntitySide:
+    if variant["right"] > rightEntitySide:
         #Increase margin to make room for the variant
-        entity["margin"][1] += (fullRightSide - rightEntitySide) 
+        entity["margin"][1] += (variant["right"] - rightEntitySide) 
         anyChanges = True
 
     #Change the entity size
-    resizeEntity(entity)
+    if anyChanges:
+        resizeEntity(entity)
 
     if entity["parent"] != None:
         familyTreeList = getFamiliyTreeList(entity)
         resizeContainer(familyTreeList[-2])
 
-    variant["size"][0] = variantWidth + variantElementWidth 
+    #Set size-width of the variant now if it has changed
+    variant["size"][0] = widthForContent + variantStyleWidth 
 
     debug.debugPrint(f"variantSize: {variant['size']}", "RESIZE")
 
@@ -1785,23 +1846,127 @@ def getEntitySides(entity):
     return [getEntityLeft(entity), getEntityRight(entity)]
 
 
-def getVariantLeft(variant):
-    return variant["left"] + variant["border"][3] + variant["padding"][3] + variant["margin"][3] - 1
+def resizeByVariantManyStartSide(sequence, variant):
+    """
+        On the start side, check if we fit in the entity.
+        If not, need to increase the left-margin of that entity
+    """
+    anyChanges = False
+
+    startEntity = getEntityWithId(sequence, variant["startEntityId"])
+
+    [startEntityLeft, _] = getEntitySides(startEntity)
+
+    if variant["left"] > startEntityLeft:
+        #Increase margin to make room for the variant
+
+        toAdd = variant["left"] - startEntityLeft
+
+        startEntity["margin"][3] += toAdd 
+
+        if startEntity["parent"] != None:
+            familyTreeList = getFamiliyTreeList(startEntity)
+            resizeContainer(familyTreeList[-2])
+
+        else:
+            resizeEntity(startEntity)
+
+        anyChanges = True
+
+        debug.debugPrint(f"add {toAdd} margin on left entity. entityLeft: {startEntityLeft}", 
+                         "VARIANT")
+    
+    return anyChanges
 
 
-def getVariantRight(variant):
-    return variant["right"] + variant["border"][1] + variant["padding"][1] + variant["margin"][1] - 1
+def resizeByVariantManyEndSide(sequence, variant):
+    """
+
+    """
+
+    anyChanges = False
+
+    endEntity   = getEntityWithId(sequence, variant["endEntityId"])
+
+    [_, entityRight] = getEntitySides(endEntity)
+    
+    if variant["right"] > entityRight:
+        #Increase margin to make room for the variant
+        toAdd = variant["right"] - entityRight
+        endEntity["margin"][1] += toAdd 
+
+        if endEntity["parent"] != None:
+            familyTreeList = getFamiliyTreeList(endEntity)
+            resizeContainer(familyTreeList[-2])
+        else:
+            resizeEntity(endEntity)
+
+        anyChanges = True
+
+        debug.debugPrint(f"add {toAdd} margin on right entity. entityRight: {entityRight}", 
+                         "VARIANT")
+    return anyChanges
 
 
-def resizeByVariantManyEntitites(sequence, variant):
+def resizeByVariantManyContent(sequence, variant):
+
+    anyChanges = False
+
+    startEntity = getEntityWithId(sequence, variant["startEntityId"])
+    endEntity   = getEntityWithId(sequence, variant["endEntityId"])
+
+    [entityLeft, _]  = getEntitySides(startEntity)
+    [_, entityRight] = getEntitySides(endEntity)
+
+    cc = getEntityCC(sequence, 
+                     startEntity, 
+                     endEntity)    
+
+    totalWidthToFitInto = cc + 1 + 1 + entityLeft + entityRight
+
+    contentWidth = getVariantContentWidth(variant)
+
+    #FIXME: this is wrong. this also counts margin and padding and border.
+    # it will not work with very large content-sizes
+    totalVariantWidth = contentWidth + variant["left"] + variant["right"] + 1 + 1
+
+    if totalVariantWidth > totalWidthToFitInto:
+        #does not fit increase CC:
+        distanceToAdd = totalVariantWidth - totalWidthToFitInto 
+
+        debug.debugPrint(f"increase CC by distanceToAdd: {distanceToAdd}",
+                         "VARIANT")
+
+        addCC(sequence, 
+              startEntity, 
+              endEntity, 
+              distanceToAdd)
+
+        anyChanges = True
+
+    cc = getEntityCC(sequence, 
+                     startEntity, 
+                     endEntity)    
+
+    debug.debugPrint(f"{variant['left']} {cc} {variant['right']}", "VARIANT")
+
+    variant["size"][0] = variant["left"] + cc + variant["right"] + 1 + 1
+
+    debug.debugPrint(f"final variant width: {variant['size'][0]}",
+                     "VARIANT")
+
+    return anyChanges
+
+
+def resizeByVariantMany(sequence, variant):
     """
         I think we are trying to figure out if we need to increase
-        left margin on fromEntity and right margin on toEntity,
+        left margin on startEntity and right margin on endEntity,
         for the given variant.
 
         It is not that complicated.
 
-      fromEntity     toEntity
+     startEntity     endEntity
           |             |
           v             v
         +---+  +---+  +---+   <--+
@@ -1831,117 +1996,15 @@ def resizeByVariantManyEntitites(sequence, variant):
         and that B represents one or more entities/containers between A and C.
     """
 
-    #Check if we need to add anything to the entity because of 
-    #sides
-
-    debug.debugPrint("resizeByVariantManyEntitites BEGIN", "FUNCTION")
+    debug.debugPrint("resizeByVariantMany BEGIN", "FUNCTION")
 
     anyChanges = False
 
-    fromEntity = getEntityWithId(sequence, variant["fromEntityId"])
-    toEntity = getEntityWithId(sequence, variant["toEntityId"])
+    anyChanges |= resizeByVariantManyStartSide(sequence, variant)
+    anyChanges |= resizeByVariantManyEndSide(sequence, variant)
+    anyChanges |= resizeByVariantManyContent(sequence, variant)
 
-
-    [entityLeft, _] = getEntitySides(fromEntity)
-    [_, entityRight] = getEntitySides(toEntity)
-
-    fullVariantLeft  = getVariantLeft(variant) 
-    fullVariantRight = getVariantRight(variant) 
-
-    debug.debugPrint(f"resize variant over many: "\
-                     f"from-to {fromEntity['name']} - {toEntity['name']} "\
-                     f"entityLeft {entityLeft} entityRight: {entityRight} "\
-                     f"fullVariantLeft: {fullVariantLeft} fullVariantRight: {fullVariantRight}", 
-                     "VARIANT")
-
-    if fullVariantLeft > entityLeft:
-        #Increase margin to make room for the variant
-
-        toAdd = fullVariantLeft - entityLeft
-        fromEntity["margin"][3] += toAdd 
-
-        if fromEntity["parent"] != None:
-            familyTreeList = getFamiliyTreeList(fromEntity)
-            resizeContainer(familyTreeList[-2])
-
-        else:
-            resizeEntity(fromEntity)
-
-        #Get the new entityLeft
-        [entityLeft, _] = getEntitySides(fromEntity)
-
-        anyChanges = True
-
-        debug.debugPrint(f"add {toAdd} margin on left entity. entityLeft: {entityLeft}", 
-                         "VARIANT")
-    
-
-    if fullVariantRight > entityRight:
-        #Increase margin to make room for the variant
-        toAdd = fullVariantRight - entityRight
-        toEntity["margin"][1] += toAdd 
-
-        if toEntity["parent"] != None:
-            familyTreeList = getFamiliyTreeList(toEntity)
-            resizeContainer(familyTreeList[-2])
-        else:
-            resizeEntity(toEntity)
-
-        #Get the new entityRight
-        [_, entityRight] = getEntitySides(toEntity)
-
-        anyChanges = True
-
-        debug.debugPrint(f"add {toAdd} margin on right entity. entityRight: {entityRight}", 
-                         "VARIANT")
-
-
-    #Now we also need to take into account the variant content
-
-    cc = getEntityCC(sequence, 
-                     fromEntity, 
-                     toEntity)    
-
-    totalWidthToFitInto = cc + 1 + 1 + entityLeft + entityRight
-
-    contentWidth = getVariantContentWidth(variant)
-
-    variantStyleWidth = variant["border"][1] + \
-                        variant["border"][3] + \
-                        variant["padding"][1] + \
-                        variant["padding"][3] + \
-                        variant["margin"][1] + \
-                        variant["margin"][3]
-
-    totalVariantWidth = contentWidth + variantStyleWidth + variant["left"] + variant["right"] - 1 - 1
-
-    debug.debugPrint(f"widths: cc: {cc} totalWidthToFitInto: {totalWidthToFitInto} contentWidth: {contentWidth} "\
-                     f"variantStyleWidth: {variantStyleWidth} totalVariantWidth: {totalVariantWidth}", 
-                         "VARIANT")
-
-    if totalVariantWidth > totalWidthToFitInto:
-        #ok increase CC:
-        distanceToAdd = totalVariantWidth - totalWidthToFitInto 
-        debug.debugPrint(f"increase CC by distanceToAdd: {distanceToAdd}",
-                         "VARIANT")
-        addCC(sequence, fromEntity, toEntity, distanceToAdd)
-
-        anyChanges = True
-
-    cc = getEntityCC(sequence, 
-                     fromEntity, 
-                     toEntity)    
-
-    debug.debugPrint(f"{variant['left']} {cc} {variant['right']}", "VARIANT")
-    #Ok, this looks extremly retarded. but that's only because it mirrors the author thought-pattern.
-    #add 1 for fromEntity middleCol, 1 for toEntity middleCol, but then remove 1 for each side (left, right)...
-    variant["size"][0] = variant["left"] + cc + variant["right"] + 1 + 1 + variantStyleWidth - 1 - 1 
-
-    
-    debug.debugPrint(f"final variant width: {variant['size'][0]}",
-                     "VARIANT")
-
-    debug.debugPrint("resizeByVariantManyEntitites END", "FUNCTION")
+    debug.debugPrint("resizeByVariantMany END", "FUNCTION")
 
     return anyChanges 
 
@@ -1950,7 +2013,7 @@ def resizeByVariant(sequence, variant):
     """
         Resize entities by variants.
 
-        We have already set the height of the variants (see initializeVariant),
+        We have already set the height of the variants (see initializeVariant_),
         the sides of every variant (recursively),
         and we have already taken into account CC-increasage due to "atomic actions"...
 
@@ -1982,14 +2045,13 @@ def resizeByVariant(sequence, variant):
     for branch in variant["branchList"]:
         for branchAction in branch["actionList"]:
             if branchAction["type"] == "variant":
-                
                 anyChanges = anyChanges or resizeByVariant(sequence, branchAction)
 
-    if variant["fromEntityId"] == variant["toEntityId"]:
-        anyChanges = anyChanges or resizeByVariantSingleEntity(sequence, variant)
+    if variant["startEntityId"] == variant["endEntityId"]:
+        anyChanges = anyChanges or resizeByVariantSingle(sequence, variant)
 
     else:
-        anyChanges = anyChanges or resizeByVariantManyEntitites(sequence, variant)
+        anyChanges = anyChanges or resizeByVariantMany(sequence, variant)
 
     debug.debugPrint("resizeByVariant END", "FUNCTION")
 
@@ -2171,7 +2233,7 @@ def resizeItemsByOnActions(sequence):
     """
     #First. go with the on-actions
     #These will resize their respective entity
-    for action in sequence["rawActionList"]:
+    for action in sequence["primitiveActionList"]:
         if action["type"] == "on":
             entity = getEntityWithId(sequence, action["entityId"])
 
@@ -2210,9 +2272,9 @@ def resizeItemsByCommunicationActions(sequence):
     for action in communicationList:
         if action["type"] == "communication":
 
-            [firstEntity, secondEntity] = getFromAndToEntities(sequence, 
-                                                               action["fromEntityId"], 
-                                                               action["toEntityId"])
+            [firstEntity, secondEntity] = getStartAndEndEntities(sequence, 
+                                                                 action["fromEntityId"], 
+                                                                 action["toEntityId"])
 
             cc = getEntityCC(sequence, firstEntity, secondEntity)  
 
@@ -2259,12 +2321,12 @@ def resizeCommunications(sequence):
         In other words, if CC has changed due to variant (or other),
         this will be handled here.
     """
-    for action in sequence["rawActionList"]:
+    for action in sequence["primitiveActionList"]:
         if action["type"] == "communication":
             
-            [firstEntity, secondEntity] = getFromAndToEntities(sequence, 
-                                                               action["fromEntityId"], 
-                                                               action["toEntityId"])
+            [firstEntity, secondEntity] = getStartAndEndEntities(sequence, 
+                                                                 action["fromEntityId"], 
+                                                                 action["toEntityId"])
 
             cc = getEntityCC(sequence, firstEntity, secondEntity)    
 
@@ -2457,8 +2519,8 @@ def setStartAndEndEntityForVariant(sequence, variant):
 
         After this, variants here will have attributes:
 
-            fromEntityId
-            toEntityId
+            startEntityId
+            endEntityId
 
         set, and ready to go!
     """
@@ -2478,8 +2540,8 @@ def setStartAndEndEntityForVariant(sequence, variant):
             if branchAction["type"] == "variant":
                 setStartAndEndEntityForVariant(sequence, branchAction)
     
-                entityIdSet.add(branchAction["fromEntityId"])
-                entityIdSet.add(branchAction["toEntityId"])
+                entityIdSet.add(branchAction["startEntityId"])
+                entityIdSet.add(branchAction["endEntityId"])
 
             elif branchAction["type"] == "on":
                 entityIdSet.add(branchAction["entityId"])
@@ -2490,48 +2552,17 @@ def setStartAndEndEntityForVariant(sequence, variant):
 
             else:
                 debug.fatalError(f"type {branchAction['type']}")
-    
-    variant["fromEntityId"] = getFirstEntityInSet(sequence, entityIdSet)
-    variant["toEntityId"]   = getLastEntityInSet(sequence, entityIdSet)
 
-    fromEntity = getEntityWithId(sequence, variant["fromEntityId"])    
-    toEntity = getEntityWithId(sequence, variant["toEntityId"])    
+    variant["startEntityId"] = getFirstEntityInSet(sequence, entityIdSet)
+    variant["endEntityId"]   = getLastEntityInSet(sequence, entityIdSet)
 
-    debug.debugPrint(f"from-to {variant['fromEntityId']} - {variant['toEntityId']}"\
-                     f" name {fromEntity['name']} - {toEntity['name']}", "VARIANT")
+    startEntity = getEntityWithId(sequence, variant["startEntityId"])    
+    endEntity   = getEntityWithId(sequence, variant["endEntityId"])    
+
+    debug.debugPrint(f"from-to {variant['startEntityId']} - {variant['endEntityId']}"\
+                     f" name {startEntity['name']} - {endEntity['name']}", "VARIANT")
 
     debug.debugPrint("setStartAndEndEntityForVariant END", "FUNCTION")
-
-
-def getOnActionSides(onAction):
-    """
-        Return how much this entity sticks out each side from middle column.
-        
-        This is including margin, border, padding.
-        Example (no left/right-margin):
-
-                 |                  |
-                 |                  |
-              +----+             +-----+
-              |    |             |     |
-              +----+             +-----+
-                 |                  |
-
-      returns [3, 2]             [3, 3]
-
-
-        This then means that we are left-aligned(?!). Is this consistent?
-    """
-
-    sizeToSplit = onAction["size"][0] - 1 #Remove the middleCol from the equation
-
-    left    = int((sizeToSplit) / 2)
-    right   = int((sizeToSplit) / 2)
-
-    if onAction["size"][0] % 2 == 0:
-        left += 1
-
-    return [left, right]
 
 
 def setVariantSides(sequence, variant):
@@ -2539,7 +2570,11 @@ def setVariantSides(sequence, variant):
         Set variant left and right addage.
         I.E how far away of middle column of entity this variant have to start.
 
-        so we have an entity, and a variant around it.
+        We will also in the same go set the height of the variant,
+        since that will be easily calculated at the same time,
+        and will not change later.
+
+        So we have an entity, and a variant around it.
         left (L) and right (R) will be as follows:
 
              +---+
@@ -2568,8 +2603,8 @@ def setVariantSides(sequence, variant):
 
     debug.debugPrint(f"setVariantSides START", "FUNCTION")
 
-    height = variant["margin"][0] + variant["margin"][2] +\
-             variant["border"][0] + variant["border"][2] +\
+    height = variant["margin"][0]  + variant["margin"][2] +\
+             variant["border"][0]  + variant["border"][2] +\
              variant["padding"][0] + variant["padding"][2]
 
     left  = 0
@@ -2581,7 +2616,7 @@ def setVariantSides(sequence, variant):
 
         branchHeight = 0
 
-        if isFirstBranch:
+        if isFirstBranch: #apprently the first branch will be 2 in height...?
             branchHeight = 2
 
         else:
@@ -2595,11 +2630,11 @@ def setVariantSides(sequence, variant):
 
                 [vLeft, vRight, leftEntityId, rightEntityId] = setVariantSides(sequence, branchAction)
 
-                if leftEntityId == variant["fromEntityId"]:
+                if leftEntityId == variant["startEntityId"]:
                     if vLeft > left:
                         left = vLeft
 
-                if rightEntityId == variant["toEntityId"]:
+                if rightEntityId == variant["endEntityId"]:
                     if vRight > right:
                         right = vRight
 
@@ -2607,7 +2642,7 @@ def setVariantSides(sequence, variant):
 
                 #If we are on single entity, need to expand our left and right when we go hard or go home
                 #with the name of branches b long
-                if variant["fromEntityId"] == variant["toEntityId"]:
+                if variant["startEntityId"] == variant["endEntityId"]:
                     for subBranch in branchAction["branchList"]:
                         subBranchContentWidth = len(subBranch["name"])
                         if (left + 1 + right - 2) < subBranchContentWidth:
@@ -2620,33 +2655,37 @@ def setVariantSides(sequence, variant):
             elif branchAction["type"] == "on":
                 branchHeight += branchAction["size"][1]
 
-                [onLeft, onRight] = getOnActionSides(branchAction)
+                onLeft  = branchAction["left"] 
+                onRight = branchAction["right"] 
 
-                if variant["fromEntityId"] == variant["toEntityId"]:
-                    if branchAction["entityId"] == variant["fromEntityId"]:
-
-                        if onLeft > left:
-                            left = onLeft
-
-                        if onRight > right:
-                            right = onRight
-
-                elif branchAction["entityId"] == variant["fromEntityId"]:
+                if branchAction["entityId"] == variant["startEntityId"]:
                     if onLeft > left:
                         left = onLeft
 
-                elif branchAction["entityId"] == variant["toEntityId"]:
+                if branchAction["entityId"] == variant["endEntityId"]:
                     if onRight > right:
                         right = onRight
-
-                else:
-                    #This on is in middle somwhere, no action needed :)
-                    pass
                     
 
             elif branchAction["type"] == "communication":
                 #A communication take no room on sides (AT LEAST NOT YET!)
                 branchHeight += branchAction["size"][1]
+
+                #TODO: check if communication is on any entity this variant is on (start/end)
+                onLeft  = branchAction["left"] 
+                onRight = branchAction["right"] 
+
+                [comStartEntityId, comEndEntityId] = getStartAndEndEntities(sequence, 
+                                                                            branchAction["fromEntityId"], 
+                                                                            branchAction["toEntityId"])
+
+                if variant["startEntityId"] == comStartEntityId:
+                    #Check if this communication has any left, and if so check left of that 
+                    pass
+
+                if variant["endEntityId"] == comEndEntityId:
+                    #-||- but right
+                    pass
 
             else:
                 debug.fatalError(f"ERROR: type {branchAction['type']}")
@@ -2658,8 +2697,8 @@ def setVariantSides(sequence, variant):
     variant["size"][1] = height
 
             
-    #So in essence, left is where this should start left side, 
-    #and right where it shall start right side.
+    #So in essence, left is where this should end left side, 
+    #and right where it shall end right side.
     #and by start I mean where the inner element ends + 1
     #and also to clarify, its left of middleCol of fromEntity, and right from middleCol toEntity...
     variant["left"]    = left  + variant["border"][3] + variant["margin"][3] + variant["padding"][3]
@@ -2674,7 +2713,7 @@ def setVariantSides(sequence, variant):
 
     debug.debugPrint(f"setVariantSides END", "FUNCTION")
 
-    return [variant["left"], variant["right"], variant["fromEntityId"], variant["toEntityId"]]
+    return [variant["left"], variant["right"], variant["startEntityId"], variant["endEntityId"]]
 
 
 def setVariantStyle(variant):
@@ -2695,7 +2734,7 @@ def initializeVariant(sequence, variant):
     """
         Initialize a particular variant.
 
-        This includes: 
+        This includes for this variant, and all subvariants: 
             Setting default style: border, padding, margin (if non are set explicitly)
 
             Setting fromEntityId and toEntityId 
@@ -2727,6 +2766,17 @@ def initializeVariants(sequence):
         I think this is the only way of doing things.
         And then in the end we can adjust entity width depending on the
         variant configuration
+
+        Will (for every variant even variants within variants (within variants ...)): 
+
+            Set style for all variants
+                Basically margin, padding, border if not already set explicit in config
+
+            Set the start and end entity that variants covers.
+               
+
+            Set the sides for the variant
+    
     """
     debug.debugPrint("initializeVariants START", "FUNCTION")
 
@@ -2759,13 +2809,13 @@ def getActionsInVariant(variant):
     return aList
 
 
-def buildRawActionList(sequence):
+def buildPrimitiveActionList(sequence):
     """
-        the naming is not perfect... But rawActionList are all non-container-type actions...
+        the naming is not perfect... But primitiveActionList are all non-container-type actions...
         easy right :D 
         I.E all actions not of type variant right now
 
-        So this function builds the list => sequence['rawActionList']
+        So this function builds the list => sequence['primitiveActionList']
         with all 'atomic' actions in order of appearance.
     
         This will allow us to determine the size of these actions later,
@@ -2773,19 +2823,19 @@ def buildRawActionList(sequence):
         since the 'container'-type actions sizes depend on the size
         of these... I don't know if this is smart, but it works.
     """
-    rawActionList = []
+    primitiveActionList = []
 
     for action in sequence["actionList"]:
         if action["type"] in ["on", "communication"]:
-            rawActionList.append(action)
+            primitiveActionList.append(action)
 
         elif action["type"] == "variant":
-            rawActionList.extend(getActionsInVariant(action))
+            primitiveActionList.extend(getActionsInVariant(action))
 
         else:
             debug.fatalError(f"Unknown action tpe {type['type']}")
 
-    sequence["rawActionList"] = rawActionList        
+    sequence["primitiveActionList"] = primitiveActionList        
 
 
 def initializeActions(sequence):
@@ -2796,15 +2846,19 @@ def initializeActions(sequence):
 
         Determine the size of each of them.
         Also the variants, we determine the start and end entity they cover :)
+
+        Set the sides for each action
     """
     debug.debugPrint("initializeActions BEGIN", "FUNCTION")
 
-    buildRawActionList(sequence)
+    buildPrimitiveActionList(sequence)
 
-    for action in sequence["rawActionList"]:
+    for action in sequence["primitiveActionList"]:
         setStyle(action) 
 
     determineSizeOfActions(sequence)
+    
+    setSidesOfActions(sequence)
 
     initializeVariants(sequence)
 

@@ -294,7 +294,9 @@ Things that I want to do to increase functionality
 
 * onMany - a on type action but covering many entities
 
-* And split when going down enough in window,
+* multiline-content
+
+* vim: And split when going down enough in window,
   synching windows with one another to always see the header.
   This will be done with commands and mappings. Not with autocmds CursorMoved.
   It will be to slow I think.

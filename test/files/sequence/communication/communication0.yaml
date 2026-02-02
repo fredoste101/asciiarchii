@@ -1,0 +1,44 @@
+#test yaml file
+#I figured it might be nicer to configure with yaml than json.
+#get rid of all { and } and such.
+type: sequence
+
+name: someName
+
+description: Some description
+
+marginToFirstAction:  3
+marginAfterLastAction: 3
+
+itemList:
+  - 
+    type: container
+    name: top
+    padding: [0,1,0,1]
+    itemList:
+      - 
+        id:     0
+        type:   entity 
+        name:   alice
+        margin: [0,0,0,0]
+      - 
+        id:     1
+        type:   entity 
+        name:   bob
+        margin: [0,0,0,0]
+
+actionList: 
+  -
+    type: communication
+    name: test
+    content: hello
+    fromEntityId: 1
+    toEntityId: 0
+    padding: [0,1,0,1]
+
+    onFrom:
+      content: from 
+    onTo:
+      content: to
+      
+  

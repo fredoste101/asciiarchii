@@ -153,7 +153,7 @@ function! ASCIIARCHII_ApplyLineColor(thing, vimConfig, runningNum)
 
 				call ASCIIARCHII_CreateHighlight(thing_border_highlight_name, lineConfig)
 
-				call ASCIIARCHII_ApplySyntaxOnCoordinates(a:thing["lineCoordinateList"], thing_border_highlight_name)
+				"call ASCIIARCHII_ApplySyntaxOnCoordinates(a:thing["lineCoordinateList"], thing_border_highlight_name)
 			endif
 		endif
 	endif
@@ -491,6 +491,17 @@ function ASCIIARCHII_sequenceBufferLeave()
 endfunction
 
 
+function! ASCIIARCHI_cursorMoved()
+	execute("normal zszH<CR>")
+
+	if exists("b:ASCIIARCHII_headerWindowId")
+		"TODO: fix this so that header moves together.
+		"However, I need to be able to test this to develop it
+	endif
+
+endfunction
+
+
 function! ASCIIARCHII_InitializeVimSequence(fileName)
 	"Initialize the sequence by loading the json-file,
 	"applying style and initializing commands.
@@ -503,7 +514,7 @@ function! ASCIIARCHII_InitializeVimSequence(fileName)
 
 	call ASCIIARCHII_LoadSequence(a:fileName)
 
-	call ASCIIARCHII_ApplyStyle()
+	"call ASCIIARCHII_ApplyStyle()
 
 	call ASCIIARCHII_InitializeCommands()
 
@@ -514,9 +525,11 @@ function! ASCIIARCHII_InitializeVimSequence(fileName)
 	"with varying amounts of success...)
 	setlocal nostartofline
 
-
 	"Otherwise it will not be good stuff
 	setlocal nowrap
+
+	"This might be nice, but maybe it should be optional?
+	setlocal so=999
 
 	"TODO: do I need to set like nomodifiable and stuff?
 
@@ -534,6 +547,7 @@ function! ASCIIARCHII_InitializeVimSequence(fileName)
 	    au!
 	    autocmd BufEnter *.aa call ASCIIARCHII_sequenceBufferEnter()
 	    autocmd BufLeave *.aa call ASCIIARCHII_sequenceBufferLeave()
+	    au CursorMoved <buffer> *.aa call ASCIIARCHI_cursorMoved()
 	augroup END
 
 	"TODO: these commands might interfere with user-defined commands...

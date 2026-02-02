@@ -20,7 +20,8 @@
 				 "content":"message", 
 				 "fromEntityId":0, 
 				 "toEntityId":1,
-				 "margin":[0,0,1,0]
+				 "margin":[0,0,1,0],
+				 "padding":[0,1,0,1]
 				}
 			 ]
 			}

@@ -38,6 +38,8 @@ def addCoord(thing, x, y, name):
     """
         Add a coordinate to be colored with name.
         So in essence: thing[name] will have x and y added.
+
+        This is vim specific... fuck
     """
     if len(thing[name]) == 0:
         thing[name].append([[x,y], [x+1,y]])
@@ -171,7 +173,6 @@ def setEntityPos(entity, pos):
                                 [entity["borderEndPos"][0]+1, entity["borderEndPos"][1]]]
                         ]
 
-
     x1 = entity["borderStartPos"][0]
     x2 = entity["borderEndPos"][0]
 
@@ -180,7 +181,6 @@ def setEntityPos(entity, pos):
         borderCoordinates.append([[x2, y], [x2+1, y]])
 
     entity["borderCoordinateList"] = borderCoordinates
-
 
     #Content 
 
@@ -196,7 +196,6 @@ def setEntityPos(entity, pos):
 
     #Only allow one line names now
     entity["contentEndPos"][1] = entity["contentStartPos"][1] 
-
 
     return [entity["size"][0], entity["size"][1]]
 
@@ -293,7 +292,6 @@ def determineRelativePositionOfOnAction(sequence, onAction, row):
 
     startCol = middleCol - int(onAction["size"][0] / 2) 
 
-
     #OUTER POS
     onAction["startPos"]            = [startCol, row]
     onAction["endPos"]              = [startCol + onAction["size"][0], 
@@ -332,6 +330,10 @@ def determineRelativePositionOfCommunicationAction(sequence, communication, row)
     fromEntity  = getEntityWithId(sequence, communication["fromEntityId"])    
     toEntity    = getEntityWithId(sequence, communication["toEntityId"])    
 
+    #[startEntity, endEntity] = getStartAndEndEntities(sequence, 
+    #                                                  fromEntity,
+    #                                                  toEntity)
+
     fromCol = fromEntity["timeLineCol"]
     toCol   = toEntity["timeLineCol"]
 
@@ -341,39 +343,54 @@ def determineRelativePositionOfCommunicationAction(sequence, communication, row)
 
     lineRow = contentRow + 1 #content is now only one line long
 
+    innerStart = 0
 
     if fromCol < toCol:
-        communicationMiddle = fromCol + int((toCol - fromCol) / 2)
+        innerStart  = fromCol + communication["innerRight"]
+        innerEnd    = toCol - communication["innerLeft"]
 
-        communication["arrowPos"] = [toCol - 1, lineRow]
+        communicationMiddle = innerStart + int((innerEnd - innerStart) / 2)
+
+        communication["arrowPos"] = [innerEnd - 1, lineRow]
         communication["arrowChar"] = ">"
 
-        communication["lineStartPos"] = [fromCol + 1, lineRow]
+        communication["lineStartPos"] = [innerStart + 1, lineRow]
 
-        communication["lineEndPos"] = [toCol - 2, lineRow]
+        communication["lineEndPos"] = [innerEnd - 2, lineRow]
         
     else:
-        communicationMiddle = toCol + int((fromCol - toCol) / 2)
+        innerStart  = toCol + communication["innerRight"]
+        innerEnd    = fromCol - communication["innerLeft"]
 
-        communication["arrowPos"] = [toCol + 1, lineRow]
+        communicationMiddle = innerStart + int((innerEnd - innerStart) / 2)
+
+        communication["arrowPos"] = [innerStart + 1, lineRow]
         communication["arrowChar"] = "<"
 
-        communication["lineStartPos"] = [toCol + 2, lineRow]
-        communication["lineEndPos"] = [fromCol - 1, lineRow]
+        communication["lineStartPos"] = [innerStart + 2, lineRow]
+        communication["lineEndPos"] = [innerEnd - 1, lineRow]
 
     contentLength = len(communication["content"])
-
 
     #Aight. in future maybe a proper padding is due... but that is future. not present.
     calculatedPadding = communication["size"][0] - contentLength 
 
-    if calculatedPadding % 2 == 0:
-        communication["contentStartPos"] = [communicationMiddle - int((contentLength - 1) / 2), contentRow]
-        communication["contentEndPos"]   = [communicationMiddle + int(contentLength / 2), contentRow]
+    contentAndPaddingWidth = contentLength + communication["padding"][3] + communication["padding"][1]
+
+    if contentAndPaddingWidth < (innerEnd - innerStart - 1):
+
+        if calculatedPadding % 2 == 0:
+            communication["contentStartPos"] = [communicationMiddle - int((contentLength - 1) / 2), contentRow]
+            communication["contentEndPos"]   = [communicationMiddle + int(contentLength / 2), contentRow]
+
+        else:
+            communication["contentStartPos"] = [communicationMiddle - int((contentLength) / 2), contentRow]
+            communication["contentEndPos"]   = [communicationMiddle + int((contentLength - 1) / 2), contentRow]
 
     else:
-        communication["contentStartPos"] = [communicationMiddle - int((contentLength) / 2), contentRow]
-        communication["contentEndPos"]   = [communicationMiddle + int((contentLength - 1) / 2), contentRow]
+        communication["contentStartPos"] = [innerStart + communication["padding"][3] + 1, contentRow]
+        communication["contentEndPos"]   = [innerStart + communication["padding"][3] + contentLength, contentRow]
+
         
 
 def determineRelativePositionOfVariantAction(sequence, variant, row):
@@ -444,6 +461,13 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
 
             else:
                 determineRelativePositionOfCommunicationAction(sequence, branchAction, branchContentRow)
+
+                if "onTo" in action:
+                    determineRelativePositionOfOnAction(sequence, action["onTo"], currentActionRow)
+
+                if "onFrom" in action:
+                    determineRelativePositionOfOnAction(sequence, action["onFrom"], currentActionRow)
+
                 branchContentRow += branchAction["size"][1]
 
 
@@ -477,6 +501,13 @@ def determineRelativePositionOfActions(sequence, startRow):
 
         elif action["type"] == "communication":
             determineRelativePositionOfCommunicationAction(sequence, action, currentActionRow)
+
+            if "onTo" in action:
+                determineRelativePositionOfOnAction(sequence, action["onTo"], currentActionRow)
+
+            if "onFrom" in action:
+                determineRelativePositionOfOnAction(sequence, action["onFrom"], currentActionRow)
+
             currentActionRow += action["size"][1]
 
         elif action["type"] == "variant":
@@ -486,6 +517,29 @@ def determineRelativePositionOfActions(sequence, startRow):
         else:
             debug.fatalError(f"unknown action type {action['type']}")
 
+
+def addTimeLines(sequence):
+    """
+        Add the timeLines for each entity.
+
+        That is, decide which col it should be at, 
+        and where it should start in y-length.
+    """
+
+    timeLineList = []
+
+    for entity in sequence["entityList"]:
+        if entity["type"] == "entity":
+            #Middle of the entity in terms of border, I.E size without margin
+            middleOfEntity = entity["borderStartPos"][0] + int((entity["borderEndPos"][0] - entity["borderStartPos"][0]) / 2) 
+            oneBelowEntity = entity["borderEndPos"][1] + 1
+
+            timeLineList.append({"column":middleOfEntity, "rowStart":oneBelowEntity, "entityId":entity["id"]})
+
+            entity["timeLineCol"] = middleOfEntity
+            
+    sequence["timeLineList"] = timeLineList 
+        
 
 def determineRelativePositions(sequence):
     """
@@ -499,15 +553,14 @@ def determineRelativePositions(sequence):
 
             contentStartPos
             contentEndPos
-            
 
         This must be done after the relevant sizing has been done
 
         Must also determine where content should start somewhere....
 
-
         TODO: add relative offset to both x and y
     """
+
     debug.debugPrint("determineRelativePositions BEGIN", "FUNCTION")
 
     pos = [0,0]
@@ -529,7 +582,8 @@ def determineRelativePositions(sequence):
 def getCharFromOnAction(action, x, y):
     """
         Get char from an on-action.
-        It has: borders, and content. That's it.
+        It has: borders, and content. 
+        That's it.
     """
     if action["startPos"][1] <= y <= action["endPos"][1] and \
        action["startPos"][0] <= x < action["endPos"][0]:
@@ -561,6 +615,16 @@ def getCharFromCommunicationAction(action, x, y):
         Get char from communication action.
         It has content, and a line with an arrow on it. That's it :)
     """
+    if "onTo" in action:
+        r = getCharFromOnAction(action["onTo"], x, y)
+        if r[0]:
+            return r
+
+    if "onFrom" in action:
+        r = getCharFromOnAction(action["onFrom"], x, y)
+        if r[0]:
+            return r
+
     if [x, y] == action["arrowPos"]:
         #Put this as same color for now.
         addCoord(action, x, y, "lineCoordinateList")
@@ -889,28 +953,6 @@ def addBorderCoordinate(thing, x, y):
     addCoord(thing, x, y, "borderCoordinateList")
 
 
-def addTimeLines(sequence):
-    """
-        Add the timeLines for each entity.
-
-        That is, decide which col it should be at, 
-        and where it should start in y-length.
-    """
-
-    timeLineList = []
-
-    for entity in sequence["entityList"]:
-        if entity["type"] == "entity":
-            #Middle of the entity in terms of border, I.E size without margin
-            middleOfEntity = entity["borderStartPos"][0] + int((entity["borderEndPos"][0] - entity["borderStartPos"][0]) / 2) 
-            oneBelowEntity = entity["borderEndPos"][1] + 1
-
-            timeLineList.append({"column":middleOfEntity, "rowStart":oneBelowEntity, "entityId":entity["id"]})
-
-            entity["timeLineCol"] = middleOfEntity
-            
-    sequence["timeLineList"] = timeLineList 
-        
 
 def getEntityWidth(entity):
     """
@@ -988,27 +1030,42 @@ def determineSizeOfEntity(entity):
     debug.debugPrint(f"entity {entity['name']} size: {entity['size']}", "SIZING")
 
 
-def setMinimumSizeOfCommunicationAction(action):
+def setOnActionSides(onAction):
     """
-        Set the (minimum) size of a "communication" action.
-        The height will never by changed, but,
-        the width might change later during resizing.
-        This is because entity CC can change due to 
-        a variety of reasons.
+        Set how much this on-action sticks out each side from middle column.
+        
+        This is including margin, border, padding.
+        Example (no left/right-margin):
+
+                 |                  |
+                 |                  |
+              +----+             +-----+
+              |    |             |     |
+              +----+             +-----+
+               L | R              L | R
+
+              [3, 2]             [3, 3]
+                
+    
+        Sets the attributes:
+            left (L)
+            right (R)
+
+        for this action.
+        Note that we are left-biased, I.E uneven size results in
+        more left than right.
     """
 
-    width = len(action["content"]) +\
-             action['padding'][1] + action['padding'][3] +\
-             action['margin'][1]  + action['margin'][3] 
+    sizeToSplit = onAction["size"][0] - 1 #Remove the middleCol from the equation
 
-    height = 2 + \
-              action["margin"][2]  + action["margin"][0] +\
-              action["padding"][0] + action["padding"][2] #Padding in height is a bit tricky on the communication...
+    left    = int((sizeToSplit) / 2)
+    right   = int((sizeToSplit) / 2)
 
-    action["size"] = [width, height]
+    if onAction["size"][0] % 2 == 0:
+        left += 1
 
-    debug.debugPrint(f"communication-action: {action['content']} determined size: {action['size']}", 
-                     "SIZING")
+    onAction["left"]  = left
+    onAction["right"] = right
 
 
 def setSizeOfOnAction(action):
@@ -1048,76 +1105,156 @@ def setSizeOfOnAction(action):
     debug.debugPrint(f"on-action: {action['content']} determined size: {action['size']}", 
                      "SIZING")
 
-    return [width, height]
+    setOnActionSides(action)
 
 
-def setOnActionSides(onAction):
+def getStartAndEndEntities(sequence, entity1Id, entity2Id):
     """
-        Set how much this on-action sticks out each side from middle column.
-        
-        This is including margin, border, padding.
-        Example (no left/right-margin):
+        Get two entities, in order of appearance in the entityList.
+        That means that the from/to order could be "swapped"
 
-                 |                  |
-                 |                  |
-              +----+             +-----+
-              |    |             |     |
-              +----+             +-----+
-               L | R              L | R
+        Consider this scenario of entities (lets assume name and id are the same):
 
-              [3, 2]             [3, 3]
-                
+        +---+    +---+     +---+
+        | A |    | B |     | C |
+        +---+    +---+     +---+
+          |        |         |
+
+        if
+            entity1Id = C
+            entity2Id = A
+
+        then
+            startEntity = A
+            endEntity   = C
+
+
+        Returns:
+            [startEntity, endEntiy]
+    """
+    entityList = []
+
+    for entity in sequence["entityList"]:
+        if entity["id"] in [entity1Id, entity2Id]:
+            entityList.append(entity)
+
+    if len(entityList) != 2:
+        debug.fatalError(f"Could not find entites for ID from: {entity1Id} and to: {entity2Id}")
+
+    if entityList[0]["id"] == entityList[1]["id"]:
+        debug.fatalError(f"two entities share the same ID: {entityList[0]['id']}")
+
+    return entityList
+
+
+def setCommunicationSides(sequence, communication):
+    """
+        Communication has sides if it has onTo or onFrom attributes:
+
+        +---+                   +---+
+        | E |                   | e |
+        +---+                   +---+
+          |                       |
+          |                       |
+     +--------+               +------+
+     | onFrom |-------------->| onTo |
+     +--------+               +------+
+     ^   ^|                       |^ ^
+     |   |                         | |
+     +-+-+                         +-+
+       |                            |
+       L                            R
+
+        TODO: explain innerLeft and innerRight
+
+    """
+
+    #TODO: redo this with entityId within onTo and onFrom
+    [startEntity, endEntity] = getStartAndEndEntities(sequence, 
+                                                      communication["fromEntityId"], 
+                                                      communication["toEntityId"]) 
     
-        Sets the attributes:
-            left (L)
-            right (R)
+    if "onTo" in communication:
+        setOnActionSides(communication["onTo"])
 
-        for this action.
-        Note that we are left-biased, I.E uneven size results in
-        more left than right.
-    """
+        if startEntity["id"] == communication["fromEntityId"]:
+            communication["right"] = communication["onTo"]["right"]
+            communication["innerLeft"] = communication["onTo"]["left"]
 
-    sizeToSplit = onAction["size"][0] - 1 #Remove the middleCol from the equation
-
-    left    = int((sizeToSplit) / 2)
-    right   = int((sizeToSplit) / 2)
-
-    if onAction["size"][0] % 2 == 0:
-        left += 1
-
-    onAction["left"]  = left
-    onAction["right"] = right
-
-
-def setCommunicationSides(communication):
-    """
-        As of now communication has no sides
-    """
-
-    communication["left"]  = 0
-    communication["right"] = 0
-
-
-def setSidesOfActions(sequence):
-    """
-        Set sides of primitive actions.
-
-        This is doable, since it will never change.
-        What will change are the sides of ENTITIES,
-        NOT actions.
-
-        This should simplify things considerably, at least in my imagination
-    """
-
-    for action in sequence["primitiveActionList"]:
-        if action["type"] == "on":
-            setOnActionSides(action)
-        
-        elif action["type"] == "communication":
-            setCommunicationSides(action)
-    
         else:
-            debug.fataError(f"Type {action['type']} does not belong in primitiveActionList")
+            communication["left"] = communication["onTo"]["left"]
+            communication["innerRight"] = communication["onTo"]["right"]
+            
+
+    if "onFrom" in communication:
+        setOnActionSides(communication["onFrom"])
+
+        if startEntity["id"] == communication["fromEntityId"]:
+            communication["left"] = communication["onFrom"]["left"]
+            communication["innerRight"] = communication["onFrom"]["right"]
+
+        else:
+            communication["right"] = communication["onFrom"]["right"]
+            communication["innerLeft"] = communication["onFrom"]["left"]
+
+
+def setMinimumSizeOfCommunicationAction(sequence, action):
+    """
+        Set the (minimum) size of a "communication" action.
+        The height will never by changed, but,
+        the width might change later during resizing.
+        This is because entity CC can change due to 
+        a variety of reasons.
+    """
+
+    action["left"]  = 0
+    action["right"] = 0
+
+    action["innerLeft"]  = 0
+    action["innerRight"] = 0
+
+    #Set the onFrom and onTo sizes if exists.
+    #This is done first, since it is needed to calculate the CC-part
+    largestOnHeight = 0
+    if "onTo" in action or "onFrom" in action:
+        if "onFrom" in action:
+            setSizeOfOnAction(action["onFrom"])    
+            action["onFrom"]["entityId"] = action["fromEntityId"]
+            largestOnHeight = action["onFrom"]["size"][1]
+
+        if "onTo" in action:
+            setSizeOfOnAction(action["onTo"])    
+            action["onTo"]["entityId"] = action["toEntityId"]
+            if action["onTo"]["size"][1] > largestOnHeight:
+                largestOnHeight = action["onTo"]["size"][1]
+
+        setCommunicationSides(sequence, action)
+
+    #Have to rethink width and height here... and future use as well
+
+    innerWidth = len(action["content"]) +\
+                    action['padding'][1] + action['padding'][3] +\
+                    action['margin'][1]  + action['margin'][3] +\
+                    action["innerLeft"] + action["innerRight"]
+
+    innerHeight = 2 + \
+                    action["margin"][2]  + action["margin"][0] +\
+                    action["padding"][0] + action["padding"][2] #Padding in height is a bit tricky on the communication...
+
+
+    #PONDER: question is, if size is even needed anymore for communication...
+
+    height = innerHeight
+
+    if largestOnHeight > innerHeight:
+        height = largestOnHeight
+
+    action["size"] = [0, height]
+
+    action["innerSize"] = [innerWidth, innerHeight]
+
+    debug.debugPrint(f"communication-action: {action['content']} determined size: {action['size']}", 
+                     "SIZING")
 
 
 def determineSizeOfActions(sequence):
@@ -1126,6 +1263,11 @@ def determineSizeOfActions(sequence):
 
         The width can later be used to resize the width of entities.
         This can be a little bit tricky, but is doable.
+
+        We also set sides here (left, right),
+        which is how much the action sticks out from its corresponding entity.
+
+        Will be used later when handling variants.
         
     """
     for action in sequence["primitiveActionList"]:
@@ -1134,7 +1276,7 @@ def determineSizeOfActions(sequence):
             setSizeOfOnAction(action)
 
         elif action["type"] == "communication":
-            setMinimumSizeOfCommunicationAction(action)
+            setMinimumSizeOfCommunicationAction(sequence, action)
             
         else:
             debug.fatalError(f"ERROR only 'on', and 'communication' supported now. "\
@@ -1474,43 +1616,6 @@ def getEntityCC(sequence, firstEntity, secondEntity):
     return cc
 
 
-def getStartAndEndEntities(sequence, entity1Id, entity2Id):
-    """
-        Get two entities, in order of appearance in the entityList.
-        That means that the from/to order could be "swapped"
-
-        Consider this scenario of entities (lets assume name and id are the same):
-
-        +---+    +---+     +---+
-        | A |    | B |     | C |
-        +---+    +---+     +---+
-          |        |         |
-
-        if
-            entity1Id = C
-            entity2Id = A
-
-        then
-            startEntity = A
-            endEntity   = C
-
-
-        Returns:
-            [startEntity, endEntiy]
-    """
-    entityList = []
-
-    for entity in sequence["entityList"]:
-        if entity["id"] in [entity1Id, entity2Id]:
-            entityList.append(entity)
-
-    if len(entityList) != 2:
-        debug.fatalError(f"Could not find entites for ID from: {entity1Id} and to: {entity2Id}")
-
-    if entityList[0]["id"] == entityList[1]["id"]:
-        debug.fatalError(f"two entities share the same ID: {entityList[0]['id']}")
-
-    return entityList
 
 
 def getEntitiesSpanned(sequence, communication):
@@ -1560,10 +1665,6 @@ def addCC(sequence, fromEntity, toEntity, distanceToAdd):
                                fromEntity["id"], 
                                toEntity["id"])
 
-    if distanceToAdd % 2 == 1:
-        #Ok. Need one more if uneven to get 1 margin in both directions on signal-content
-        distanceToAdd += 1
-
     #Ok. We can be really clever here, and sort of get the proportional increase per item,
     #or we can go with the easy route and just distribute them evenly.
     #easy route, I choose you
@@ -1574,37 +1675,35 @@ def addCC(sequence, fromEntity, toEntity, distanceToAdd):
 
     distanceToAddEachItem = int(distanceToAdd / len(itemList))
 
+    distanceLeftToAdd = distanceToAdd
+
     isFirstEntity = True
 
-    for item in itemList[:-1]:
-        if isFirstEntity:
-            debug.debugPrint(f"Adding {distanceToAddEachItem} to {item['name']}", "RESIZING")
-            item["margin"][1] += distanceToAddEachItem + distanceToAddEachItem % 2
+    toAddToItemList = []
+    for item in itemList:
+        toAddToItemList.append([item, 0])
 
-        else:
-            #Distribute evently beteween left and right margin. 
-            #if uneven. right will get the extra.
-            item["margin"][1] += int(distanceToAddEachItem / 2) + distanceToAddEachItem % 2
-            item["margin"][3] += int(distanceToAddEachItem / 2)
+    while distanceLeftToAdd > 0:
+        for toAddToItem in toAddToItemList:
+            toAddToItem[1] += 1
+            distanceLeftToAdd -= 1
+            if distanceLeftToAdd == 0:
+                break
 
-        
+    toAddToItemList[0][0]["margin"][1] += toAddToItemList[0][1]
+
+    for toAddToItem in toAddToItemList[1:-1]:
+        toAddToItem[0]["margin"][1] += toAddToItem[1] / 2 + toAddToItem[1] % 2
+        toAddToItem[0]["margin"][3] += toAddToItem[1] / 2
+    
+    toAddToItemList[-1][0]["margin"][3] += toAddToItemList[-1][1]
+
+    for item in itemList:
         if item["type"] == "entity":
             resizeEntity(item)
 
         else:
             resizeContainer(item)
-
-        isFirstEntity = False
-
-    debug.debugPrint(f"Adding {distanceToAddEachItem + distanceToAddEachItem % 2} to {itemList[-1]['name']}", "RESIZING")
-
-    itemList[-1]["margin"][3] += distanceToAddEachItem + distanceToAddEachItem % 2
-
-    if itemList[-1]["type"] == "entity":
-        resizeEntity(itemList[-1])
-
-    else:
-        resizeContainer(itemList[-1])
     
     #This is a travesty... should really nicen'[tm] things up...
     #I mean, in the CC-calc the family trees are already there. Should mayhaps add familyTrees to
@@ -2220,6 +2319,32 @@ def determineSizeOfItemList(itemList):
             determineSizeOfContainer(item)
 
 
+def resizeItemByOnAction(sequence, onAction):
+    """
+        Resize one item (entity) by onAction.
+    """
+    entity = getEntityWithId(sequence, onAction["entityId"])
+
+    if onAction["size"][0] > entity["width"]:
+        toAddRightMargin = entity["margin"][1] + int((onAction["size"][0] - entity["widthNoMargin"]) / 2)
+        #Ok. I'm a bit unsure if I should add here or above, but I'll try here :)
+        toAddLeftMargin = entity["margin"][3] + int((onAction["size"][0] - entity["widthNoMargin"] + 1) / 2)
+
+        entity["margin"][1] = toAddRightMargin
+        entity["margin"][3] = toAddLeftMargin 
+
+        debug.debugPrint(f"entity: {entity['name']} is resized due to on-onAction: {onAction['content']} " \
+                   f"previous size: {entity['size']} " \
+                   f"adding: {toAddRightMargin} <- -> {toAddLeftMargin}", 
+                   "RESIZING")
+
+        resizeEntity(entity)
+
+        if entity["parent"] != None:
+            familyTreeList = getFamiliyTreeList(entity)
+            resizeContainer(familyTreeList[-2])
+
+
 def resizeItemsByOnActions(sequence):
     """
         Resize items (entities and containers)
@@ -2235,26 +2360,14 @@ def resizeItemsByOnActions(sequence):
     #These will resize their respective entity
     for action in sequence["primitiveActionList"]:
         if action["type"] == "on":
-            entity = getEntityWithId(sequence, action["entityId"])
+            resizeItemByOnAction(sequence, action)
 
-            if action["size"][0] > entity["width"]:
-                toAddRightMargin = entity["margin"][1] + int((action["size"][0] - entity["widthNoMargin"]) / 2)
-                #Ok. I'm a bit unsure if I should add here or above, but I'll try here :)
-                toAddLeftMargin = entity["margin"][3] + int((action["size"][0] - entity["widthNoMargin"] + 1) / 2)
+        if action["type"] == "communication":
+            if "onTo" in action:
+                resizeItemByOnAction(sequence, action["onTo"])
 
-                entity["margin"][1] = toAddRightMargin
-                entity["margin"][3] = toAddLeftMargin 
-
-                debug.debugPrint(f"entity: {entity['name']} is resized due to on-action: {action['content']} " \
-                           f"previous size: {entity['size']} " \
-                           f"adding: {toAddRightMargin} <- -> {toAddLeftMargin}", 
-                           "RESIZING")
-
-                resizeEntity(entity)
-
-                if entity["parent"] != None:
-                    familyTreeList = getFamiliyTreeList(entity)
-                    resizeContainer(familyTreeList[-2])
+            if "onFrom" in action:
+                resizeItemByOnAction(sequence, action["onFrom"])
 
 
 def resizeItemsByCommunicationActions(sequence):
@@ -2276,13 +2389,21 @@ def resizeItemsByCommunicationActions(sequence):
                                                                  action["fromEntityId"], 
                                                                  action["toEntityId"])
 
-            cc = getEntityCC(sequence, firstEntity, secondEntity)  
+            cc = getEntityCC(sequence, 
+                             firstEntity, 
+                             secondEntity)  
 
-            if action["size"][0] > cc:
-                
-                distanceToAdd = action["size"][0] - cc 
+            if action["innerSize"][0] > cc:
+                distanceToAdd = action["innerSize"][0] - cc 
 
-                addCC(sequence, firstEntity, secondEntity, distanceToAdd)
+                addCC(sequence, 
+                      firstEntity, 
+                      secondEntity, 
+                      distanceToAdd)
+
+                cc = getEntityCC(sequence, 
+                                 firstEntity, 
+                                 secondEntity)  
 
 
 def resizeByVariants(sequence):
@@ -2328,14 +2449,20 @@ def resizeCommunications(sequence):
                                                                  action["fromEntityId"], 
                                                                  action["toEntityId"])
 
-            cc = getEntityCC(sequence, firstEntity, secondEntity)    
+            cc = getEntityCC(sequence, 
+                             firstEntity,
+                             secondEntity)    
 
-            if action["size"][0] != cc:
-                
-                debug.debugPrint(f"communication-action {action['content']} width changed: {action['size'][0]} -> {cc}", 
-                            "RESIZING")
+            toAdd = 0
+
+            if action["innerSize"][0] < cc:
+                toAdd = cc - action["innerSize"][0] 
+
+                debug.debugPrint(f"communication-action {action['content']} width changed: {action['innerSize'][0]} -> {cc}", 
+                                 "RESIZING")
     
-            action["size"][0] = cc
+            action["innerSize"][0]  += toAdd 
+            action["size"][0]       += toAdd 
 
 
 def resizeItemWidth(sequence):
@@ -2672,8 +2799,11 @@ def setVariantSides(sequence, variant):
                 branchHeight += branchAction["size"][1]
 
                 #TODO: check if communication is on any entity this variant is on (start/end)
-                onLeft  = branchAction["left"] 
-                onRight = branchAction["right"] 
+                if "onTo" in branchAction:
+                    onTo  = branchAction["onTo"] 
+
+                if "onFrom" in branchAction:
+                    onFrom = branchAction["onFrom"] 
 
                 [comStartEntityId, comEndEntityId] = getStartAndEndEntities(sequence, 
                                                                             branchAction["fromEntityId"], 
@@ -2854,12 +2984,19 @@ def initializeActions(sequence):
     buildPrimitiveActionList(sequence)
 
     for action in sequence["primitiveActionList"]:
+
         setStyle(action) 
+
+        if action["type"] == "communication":
+
+            if "from" in action:
+                setStyle(action["from"])
+
+            if "to" in action:
+                setStyle(action["to"])
 
     determineSizeOfActions(sequence)
     
-    setSidesOfActions(sequence)
-
     initializeVariants(sequence)
 
     debug.debugPrint("initializeActions END", "FUNCTION")
@@ -2867,8 +3004,11 @@ def initializeActions(sequence):
 
 def determineHeightOfSequence(sequence):
     """
-        The height of the sequence is the height of the header + some margin to first action 
-        + the height of all actions.
+        The height of the sequence is
+            the height of the header + 
+            some margin to first action +
+            the height of all actions +
+            margin after last action
     """
     
     totalHeight = sequence["header"]["size"][1] + sequence["marginToFirstAction"] + sequence["marginAfterLastAction"]
@@ -2923,6 +3063,15 @@ def initializeActionVim(action):
     elif action["type"] == "communication":
         #Aight, this is bit unique (stupid).
         action["lineCoordinateList"] = []
+
+        if "onTo" in action:
+            action["onTo"]["borderCoordinateList"] = []
+            action["onTo"]["contentCoordinateList"] = []
+
+        if "onFrom" in action:
+            action["onFrom"]["borderCoordinateList"] = []
+            action["onFrom"]["contentCoordinateList"] = []
+             
         
 
 def initializeVim(sequence):
@@ -3097,6 +3246,7 @@ def initializeHeader(sequence):
         I.E entities and containers with entities within.
     """
     debug.debugPrint("initializeHeader BEGIN", "FUNCTION")
+
     sequence["header"] = {}
     
     sequence["header"]["size"] = [0, determineHeightsOfHeader(sequence["itemList"])]
@@ -3108,7 +3258,6 @@ def initializeHeader(sequence):
         sequence["marginAfterLastAction"] = 3
 
     debug.debugPrint("initializeHeader END", "FUNCTION")
-
 
 
 def generateSequence(config):

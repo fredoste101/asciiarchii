@@ -122,7 +122,9 @@ def main():
 
     with open(cliArgs.file, "r") as inputfile:
 
-        if cliArgs.file.split(".")[1] == "yaml":
+        fileExtension = cliArgs.file.split(".")[-1]
+
+        if fileExtension == "yaml":
             if not _yamlEnabled:
                 print("yaml could not be imported and thus is disabled. "\
                       "Try pip install yaml or something I don't know...", file=sys.stderr)
@@ -132,7 +134,7 @@ def main():
 
             #print(config)
 
-        elif cliArgs.file.split(".")[1] == "json":
+        elif fileExtension == "json":
             config = json.loads(inputfile.read())
 
         else:

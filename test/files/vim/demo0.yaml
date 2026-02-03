@@ -1,0 +1,107 @@
+type: sequence
+
+name: vimDemo0
+
+description: Vim demo0 
+
+marginToFirstAction:  3
+marginAfterLastAction: 3
+
+itemList:
+  - 
+    type: container
+    name: top
+    padding: [0,1,0,1]
+    itemList:
+      - 
+        id:     0
+        type:   entity 
+        name:   alice
+        margin: [0,0,0,0]
+      - 
+        id:     1
+        type:   entity 
+        name:   bob
+        margin: [0,0,0,0]
+      -
+        id:     2
+        type:   entity
+        name:   charlie
+        margin: [0,0,0,5]
+      -
+        id:     3
+        type:   entity
+        name:   daisy
+        margin: [0,0,0,5]
+
+actionList: 
+  -
+    type: 'on'
+    content: 'some text'
+    entityId: 0
+    padding: [0, 1, 0, 1]
+  -
+    type: communication
+    content: hello
+    fromEntityId: 0
+    toEntityId: 1
+    padding: [0,1,0,1]
+    margin: [3,0,0,0]
+    onFrom:
+      margin: [3,0,0,0]
+      content: 'hej'
+    onTo:
+      margin: [3,0,0,0]
+      content: to
+  -
+    type: 'on'
+    content: "another"
+    entityId: 1
+    padding: [0, 1, 0, 1]
+    margin: [3, 0, 2, 0]
+  -
+    type: communication
+    content: signal
+    fromEntityId: 1
+    toEntityId: 0
+    padding: [0,3,0,3]
+    margin: [0,0,4,0]
+    onFrom:
+      content: "Sending"
+    onTo:
+      content: "Receiving"
+  -
+    type: communication
+    content: toCharlie
+    fromEntityId: 0
+    toEntityId: 2
+    onFrom:
+      content: snd
+    onTo:
+      content: rcv
+  -
+    type: variant
+    padding: [0,2,3,2]
+    branchList:
+      -
+        name: opt1
+        actionList:
+          -
+            type: 'on'
+            entityId: 3
+            content: Hi
+            margin: [0,0,2,0]
+          -
+            type: communication
+            fromEntityId: 3
+            toEntityId: 0
+            content: hello
+            onTo:
+              content: "Received It!"
+            onFrom:
+              content: "Send It!"
+
+
+
+      
+  

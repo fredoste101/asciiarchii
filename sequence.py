@@ -377,6 +377,10 @@ def determineRelativePositionOfCommunicationAction(sequence, communication, row)
 
     contentAndPaddingWidth = contentLength + communication["padding"][3] + communication["padding"][1]
 
+    #I thought about this yesterday, and its wrong I think...
+    #The padding won't work as expected. anyways... another one to the backlog I suppose
+    #TODO: fix this. Here we put the content in the center if the CC is big enough.
+    #however, that can mistakenly ignore padding on either side as configured, and it shouldn't
     if contentAndPaddingWidth < (innerEnd - innerStart - 1):
 
         if calculatedPadding % 2 == 0:
@@ -388,6 +392,7 @@ def determineRelativePositionOfCommunicationAction(sequence, communication, row)
             communication["contentEndPos"]   = [communicationMiddle + int((contentLength - 1) / 2), contentRow]
 
     else:
+        #If there is not plenty of room. We use padding (well, padding left) to place content
         communication["contentStartPos"] = [innerStart + communication["padding"][3] + 1, contentRow]
         communication["contentEndPos"]   = [innerStart + communication["padding"][3] + contentLength, contentRow]
 
@@ -462,11 +467,11 @@ def determineRelativePositionOfVariantAction(sequence, variant, row):
             else:
                 determineRelativePositionOfCommunicationAction(sequence, branchAction, branchContentRow)
 
-                if "onTo" in action:
-                    determineRelativePositionOfOnAction(sequence, action["onTo"], currentActionRow)
+                if "onTo" in branchAction:
+                    determineRelativePositionOfOnAction(sequence, branchAction["onTo"], branchContentRow)
 
-                if "onFrom" in action:
-                    determineRelativePositionOfOnAction(sequence, action["onFrom"], currentActionRow)
+                if "onFrom" in branchAction:
+                    determineRelativePositionOfOnAction(sequence, branchAction["onFrom"], branchContentRow)
 
                 branchContentRow += branchAction["size"][1]
 
@@ -2796,26 +2801,35 @@ def setVariantSides(sequence, variant):
 
             elif branchAction["type"] == "communication":
                 #A communication take no room on sides (AT LEAST NOT YET!)
-                branchHeight += branchAction["size"][1]
+
+
+                [comStartEntity, comEndEntity] = getStartAndEndEntities(sequence, 
+                                                                        branchAction["fromEntityId"], 
+                                                                        branchAction["toEntityId"])
 
                 #TODO: check if communication is on any entity this variant is on (start/end)
                 if "onTo" in branchAction:
-                    onTo  = branchAction["onTo"] 
+                    onTo = branchAction["onTo"] 
+
+                    if onTo["entityId"] == comStartEntity["id"]:
+                        if onTo["left"] > left:
+                            left = onTo["left"]
+                    elif onTo["entityId"] == comEndEntity["id"]:
+                        if onTo["right"] > right:
+                            right = onTo["right"]
 
                 if "onFrom" in branchAction:
                     onFrom = branchAction["onFrom"] 
 
-                [comStartEntityId, comEndEntityId] = getStartAndEndEntities(sequence, 
-                                                                            branchAction["fromEntityId"], 
-                                                                            branchAction["toEntityId"])
+                    if onFrom["entityId"] == comStartEntity["id"]:
+                        if onFrom["left"] > left:
+                            left = onFrom["left"]
+                    elif onFrom["entityId"] == comEndEntity["id"]:
+                        if onFrom["right"] > right:
+                            right = onFrom["right"]
 
-                if variant["startEntityId"] == comStartEntityId:
-                    #Check if this communication has any left, and if so check left of that 
-                    pass
 
-                if variant["endEntityId"] == comEndEntityId:
-                    #-||- but right
-                    pass
+                branchHeight += branchAction["size"][1]
 
             else:
                 debug.fatalError(f"ERROR: type {branchAction['type']}")
@@ -3029,7 +3043,7 @@ def determineHeightOfSequence(sequence):
     sequence["height"] = totalHeight
     
 
-def initializeContainerVim(container):
+def vimInitializeContainer(container):
     """
         Aight, so need to initialize container here,
         but to fill in we need to generate the graph....
@@ -3040,7 +3054,7 @@ def initializeContainerVim(container):
 
     for subItem in container["itemList"]:
         if subItem["type"] == "container":
-            initializeContainerVim(subItem)
+            vimInitializeContainer(subItem)
     
 
 def initializeActionVim(action):
@@ -3074,12 +3088,13 @@ def initializeActionVim(action):
              
         
 
-def initializeVim(sequence):
+def vimInitialize(sequence):
     """
         Initialize the vim-attribute for every entity (should be for every type of thing later...) 
         Also, should be made sort of optional?
     """
-    debug.debugPrint("initializeVim BEGIN", "FUNCTION")
+
+    debug.debugPrint("vimInitialize BEGIN", "FUNCTION")
 
     for entity in sequence["entityList"]:
         if "vim" not in entity:
@@ -3090,12 +3105,12 @@ def initializeVim(sequence):
 
     for item in sequence["itemList"]:
         if item["type"] == "container":
-            initializeContainerVim(item)
+            vimInitializeContainer(item)
 
     for action in sequence["actionList"]:
         initializeActionVim(action) 
 
-    debug.debugPrint("initializeVim END", "FUNCTION")
+    debug.debugPrint("vimInitialize END", "FUNCTION")
 
 
 def removeCircularDependenciesContainer(container):
@@ -3175,10 +3190,10 @@ def applyFunctionOnAllActions(sequence, function):
 
 def applyFunctionOnAllThings(sequence, function):
     """
-        This can be used to apply a function to all entities that
+        This can be used to apply a function to all things that
         exists.
 
-        I.E all entities, containers, action
+        I.E all entities, containers, actions
 
         function should be a function that expects 2 arguments:
         the full sequence, and the 'thing'
@@ -3193,7 +3208,7 @@ def applyFunctionOnAllThings(sequence, function):
     applyFunctionOnAllActions(sequence, function)
 
 
-def addCommandFromThing(sequence, thing):
+def vimAddCommandFromThing(sequence, thing):
     """
         A callback to be used in applyFunctionOnAllThings
         so that all things with vim-commands add their commands to the
@@ -3219,14 +3234,147 @@ def addCommandFromThing(sequence, thing):
                 else:
                     debug.fatalError(f"commands of category: {commandTarget} NOT SUPPORTED")
 
+def vimBuildOnActionNavigation(action, navigationList, up, prev):
+    nav = {#"ref": action, 
+           "coord":action["contentStartPos"], 
+           "endCoord":action["contentEndPos"], 
+           "prev":prev, 
+           "up": up, 
+           "next":-1, 
+           "down":-1}
 
-def initializeVimCommands(sequence):
+    navigationList.append(nav)
+
+    up = navigationList.index(nav)
+
+    navigationList[prev]["next"] = up
+    navigationList[prev]["down"] = up
+
+    return [up, nav]
+
+
+def vimBuildActionNavigation(actionList, navigationList, up, prev):
+
+    nav = None
+
+    for action in actionList:
+
+        if action["type"] == "on":
+            [up, nav] = vimBuildOnActionNavigation(action, navigationList, up, prev)
+
+        elif action["type"] == "communication":
+            if "onFrom" in action:
+                nav = {#"ref": action, 
+                       "coord":action["onFrom"]["contentStartPos"], 
+                       "endCoord":action["onFrom"]["contentEndPos"], 
+                       "prev":prev, 
+                       "up": up, 
+                       "next":-1, 
+                       "down":-1}
+
+                navigationList.append(nav)
+
+                navIndex = navigationList.index(nav)
+
+                navigationList[prev]["next"] = navIndex 
+                navigationList[prev]["down"] = navIndex 
+
+                prev = navigationList.index(nav)
+            
+            nav = {#"ref": action, 
+                   "coord":action["contentStartPos"], 
+                   "endCoord":action["contentEndPos"], 
+                   "prev":prev, 
+                   "up": up, 
+                   "next":-1, 
+                   "down":-1}
+
+            navigationList.append(nav)
+
+            navIndex = navigationList.index(nav)
+
+            navigationList[prev]["next"] = navIndex 
+            navigationList[prev]["down"] = navIndex 
+
+            prev = navigationList.index(nav)
+
+            if "onTo" in action:
+                nav = {#"ref": action, 
+                       "coord":action["onTo"]["contentStartPos"], 
+                       "endCoord":action["onTo"]["contentEndPos"], 
+                       "prev":prev, 
+                       "up": up, 
+                       "next":-1, 
+                       "down":-1}
+
+                navigationList.append(nav)
+
+                navIndex = navigationList.index(nav)
+
+                navigationList[prev]["next"] = navIndex 
+                navigationList[prev]["down"] = navIndex 
+
+                prev = navigationList.index(nav)
+
+            up = navigationList.index(nav)
+
+        elif action["type"] == "variant":
+            for b in action["branchList"]:
+                [prev, up, nav] = vimBuildActionNavigation(b["actionList"], navigationList, up, prev)
+
+        #Is prev always the previous action?
+        prev = navigationList.index(nav)
+
+       # if isFirstAction:
+       #     for i, entity in enumerate(sequence["entityList"]):
+       #         navigationList[i]["down"] = prev    
+
+
+    return [prev, up, nav]
+
+
+def vimBuildNavigation(sequence):
+    navigationList = []
+    prev = -1
+    up   = -1
+
+    for entity in sequence["entityList"]:
+        nav = {#"ref": entity, 
+               "coord":entity["contentStartPos"], 
+               "endCoord":entity["contentEndPos"], 
+               "up": up, 
+               "prev": prev, 
+               "next":-1, 
+               "down":-1}
+
+        navigationList.append(nav)
+
+        navIndex = navigationList.index(nav)
+
+        if prev != -1:
+            navigationList[prev]["next"] = navIndex 
+
+        up      = navIndex 
+        prev    = navIndex 
+
+    vimBuildActionNavigation(sequence["actionList"], 
+                             navigationList, 
+                             up, 
+                             prev)
+
+    sequence["vim"]["navigationList"] = navigationList        
+
+
+def vimInitializeCommands(sequence):
     """
         build a global vim-field (if not exists) and fill with commands
         from all 'things'.
 
         Reason for this is to not have vim loop through all 'things'
         every time a command is done...
+
+        This must be done after the sequence is generated,
+        since it uses coordinates
     """
 
     if "vim" not in sequence:
@@ -3235,7 +3383,9 @@ def initializeVimCommands(sequence):
     if "commands" not in sequence["vim"]:
         sequence["vim"]["commands"] = {} 
 
-    applyFunctionOnAllThings(sequence, addCommandFromThing)
+    applyFunctionOnAllThings(sequence, vimAddCommandFromThing)
+
+    vimBuildNavigation(sequence)
 
 
 def initializeHeader(sequence):
@@ -3288,7 +3438,7 @@ def generateSequence(config):
 
     initializeActions(sequence)
 
-    initializeVim(sequence)
+    vimInitialize(sequence)
 
     resizeItemWidth(sequence)
 
@@ -3303,7 +3453,7 @@ def generateSequence(config):
 
     #Now we have built: contentCoordinateList (for example) in setSequenceGraph...
     #Lets build the commands 
-    initializeVimCommands(sequence)
+    vimInitializeCommands(sequence)
 
     return sequence
 

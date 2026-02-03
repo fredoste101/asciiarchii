@@ -2,3 +2,7 @@
 *.swo
 *.pyc
 tmpfiles/
+test.yaml
+nohup.out
+demoOut.*
+

@@ -491,7 +491,7 @@ function ASCIIARCHII_sequenceBufferLeave()
 endfunction
 
 
-function! ASCIIARCHI_cursorMoved()
+function! ASCIIARCHII_cursorMoved()
 	execute("normal zszH<CR>")
 
 	if exists("b:ASCIIARCHII_headerWindowId")
@@ -502,7 +502,33 @@ function! ASCIIARCHI_cursorMoved()
 endfunction
 
 
+function! ASCIIARCHII_navigate(direction)
+
+	let currentNav = b:ASCIIARCHII_sequence["vim"]["navigationList"][b:ASCIIARCHII_navigationCurrentIndex]
+
+	if currentNav[a:direction] != -1
+		syntax clear AA_ACTIVE_ELEMENT
+
+		let newCoord = b:ASCIIARCHII_sequence["vim"]["navigationList"][currentNav[a:direction]]["coord"] 
+
+		let endCoord = copy(b:ASCIIARCHII_sequence["vim"]["navigationList"][currentNav[a:direction]]["endCoord"])
+
+		let endCoord[0] = endCoord[0] + 1
+
+		call ASCIIARCHII_ApplySyntaxOnCoordinates([[newCoord, endCoord]], "AA_ACTIVE_ELEMENT")
+
+		call setpos(".", [0, newCoord[1] + 1, newCoord[0] + 1, 0])
+
+		let b:ASCIIARCHII_navigationCurrentIndex = currentNav[a:direction]
+
+	endif	
+
+endfunction
+
+
+
 function! ASCIIARCHII_InitializeVimSequence(fileName)
+	"First function that should be called
 	"Initialize the sequence by loading the json-file,
 	"applying style and initializing commands.
 	
@@ -547,13 +573,33 @@ function! ASCIIARCHII_InitializeVimSequence(fileName)
 	    au!
 	    autocmd BufEnter *.aa call ASCIIARCHII_sequenceBufferEnter()
 	    autocmd BufLeave *.aa call ASCIIARCHII_sequenceBufferLeave()
-	    au CursorMoved <buffer> *.aa call ASCIIARCHI_cursorMoved()
+	    au CursorMoved *.aa call ASCIIARCHII_cursorMoved()
 	augroup END
 
 	"TODO: these commands might interfere with user-defined commands...
 	"Must check if that is true and take action accordingly...
 	nnoremap <buffer> <leader>oh :call ASCIIARCHII_openHeaderWin()<CR>
 	nnoremap <buffer> <leader>ch :call ASCIIARCHII_closeHeaderWin()<CR>
+	
+
+	"Set startposition on first entity
+	let b:ASCIIARCHII_navigationCurrentIndex = 0
+	call setpos(".", [0, b:ASCIIARCHII_sequence["vim"]["navigationList"][0]["coord"][1] + 1, 
+			  \b:ASCIIARCHII_sequence["vim"]["navigationList"][0]["coord"][0] + 1, 0])
+
+	nnoremap <buffer> l :call ASCIIARCHII_navigate("next")<CR>
+	nnoremap <buffer> j :call ASCIIARCHII_navigate("down")<CR>
+	nnoremap <buffer> k :call ASCIIARCHII_navigate("up")<CR>
+	nnoremap <buffer> h :call ASCIIARCHII_navigate("prev")<CR>
+
+	call ASCIIARCHII_CreateHighlight("AA_ACTIVE_ELEMENT", {"fg":0, "bg":6})
+
+	let startCoord = b:ASCIIARCHII_sequence["vim"]["navigationList"][0]["coord"] 
+	let endCoord = copy(b:ASCIIARCHII_sequence["vim"]["navigationList"][0]["endCoord"])
+
+	let endCoord[0] = endCoord[0] + 1
+
+	call ASCIIARCHII_ApplySyntaxOnCoordinates([[startCoord, endCoord]], "AA_ACTIVE_ELEMENT")
 endfunction
 
 

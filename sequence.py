@@ -3182,6 +3182,13 @@ def applyFunctionOnAction(sequence, action, function):
             for subAction in branch["actionList"]:
                 applyFunctionOnAction(sequence, subAction, function)
 
+    elif action["type"] == "communication":
+        if "onTo" in action:
+            function(sequence, action["onTo"])
+
+        if "onFrom" in action:
+            function(sequence, action["onFrom"])
+
 
 def applyFunctionOnAllActions(sequence, function):
     for action in sequence["actionList"]:
@@ -3218,7 +3225,9 @@ def vimAddCommandFromThing(sequence, thing):
     """
     if "vim" in thing:
         if "commands" in thing["vim"]:
+
             commands = thing["vim"]["commands"]
+
             for commandTarget in commands:
                 if commandTarget == "content":
                     for commandType in commands[commandTarget]:
@@ -3229,10 +3238,22 @@ def vimAddCommandFromThing(sequence, thing):
 
                         for coords in thing["contentCoordinateList"]:
                             commandTypeList.append((coords, commands[commandTarget][commandType]))
-                            
-                    #Must get coordinatelist from content. is already there :O                    
+
                 else:
                     debug.fatalError(f"commands of category: {commandTarget} NOT SUPPORTED")
+
+        elif "navigation" in thing["vim"]:
+            #Ok so naming here is all over the place.
+            #Basically navigation is when you move around fixed with hjkl,
+            #and then we have fixed commands also, like enter to go to place.
+            
+            if "enter" in thing["vim"]["navigation"]:
+                #What will happen when pressing enter on a thing
+                enterCommandList = sequence["vim"]["navigation"]["enter"]
+
+                for coords in thing["contentCoordinateList"]:
+                    enterCommandList.append((coords, thing["vim"]["navigation"]["enter"]))
+
 
 def vimBuildOnActionNavigation(action, navigationList, up, prev):
     nav = {#"ref": action, 
@@ -3334,6 +3355,32 @@ def vimBuildActionNavigation(actionList, navigationList, up, prev):
 
 
 def vimBuildNavigation(sequence):
+    """
+        This is a work in progress...
+        
+        But idea is to be able to navigate between different
+        sequence items/actions in an efficient way,
+        and also jump to corresponding code easy and quickly.
+
+        In future I'd like a interactive mode,
+        with both code->sequence as well as sequence->code
+        live interaction. 
+        I.E you move in the sequence, and in another window,
+        the corresponding code appears.
+        And vice versa, you move in the code window,
+        and the sequence moves to the corresponding item/action,
+        to show where we are at in some flow.
+
+        Might be a little bit tricky since we can have multiple sequences,
+        and places within sequences that might correspond to a specific "code place",
+        but it should be doable and turn into something usefull.
+        
+        As of now though, we only have basic navigation using hjkl.
+        And it don't work too good either :(
+        I mean, it works, but not entirely like I'd like it to.
+
+    """
+
     navigationList = []
     prev = -1
     up   = -1
@@ -3382,6 +3429,10 @@ def vimInitializeCommands(sequence):
 
     if "commands" not in sequence["vim"]:
         sequence["vim"]["commands"] = {} 
+
+    if "navigation" not in sequence["vim"]:
+        sequence["vim"]["navigation"] = dict()
+        sequence["vim"]["navigation"]["enter"] = []
 
     applyFunctionOnAllThings(sequence, vimAddCommandFromThing)
 

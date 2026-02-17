@@ -1,0 +1,193 @@
+type: sequence
+
+name: vimDemo
+
+description: ASCIIARCHII Vim demo 
+
+marginToFirstAction:  3
+marginAfterLastAction: 3
+
+itemList:
+  - 
+    type: container
+    name: top
+    padding: [0,1,0,1]
+    itemList:
+      - 
+        id:     0
+        type:   entity 
+        name:   alice
+        margin: [0,0,0,0]
+        vim:
+          navigation:
+            enter: ":e +40 src/alice.c"
+      - 
+        id:     1
+        type:   entity 
+        name:   bob
+        margin: [0,0,0,0]
+        vim:
+          navigation:
+            enter: ":e +39 src/bob.c"
+      -
+        id:     2
+        type:   entity
+        name:   charlie
+        margin: [0,0,0,5]
+        vim:
+          navigation:
+            enter: ":e +16 src/charlie.c"
+      -
+        id:     3
+        type:   entity
+        name:   daisy
+        margin: [0,0,0,5]
+        vim:
+          navigation:
+            enter: ":e +31 src/daisy.c"
+
+actionList: 
+  -
+    type: 'on'
+    content: 'some text'
+    entityId: 0
+    padding: [0, 1, 0, 1]
+    vim:
+      navigation:
+        enter: ":e +45 src/alice.c"
+  -
+    type: communication
+    content: hello
+    fromEntityId: 0
+    toEntityId: 1
+    padding: [0,1,0,1]
+    margin: [3,0,0,0]
+    vim:
+      navigation:
+        enter: ":e +6 src/messages.h"
+    onFrom:
+      margin: [3,0,0,0]
+      content: 'hej'
+      vim:
+        navigation:
+          enter: ":e +47 src/alice.c"
+    onTo:
+      margin: [3,0,0,0]
+      content: to
+      vim:
+        navigation:
+          enter: ":e +16 src/bob.c"
+  -
+    type: 'on'
+    content: "process greeting"
+    entityId: 1
+    padding: [0, 1, 0, 1]
+    margin: [3, 0, 2, 0]
+    vim:
+      navigation:
+        enter: ":e +18 src/bob.c"
+  -
+    type: communication
+    content: signal
+    fromEntityId: 1
+    toEntityId: 0
+    padding: [0,3,0,3]
+    margin: [0,0,4,0]
+    vim:
+      navigation:
+        enter: ":e +16 src/messages.h"
+    onFrom:
+      content: "Sending"
+      vim:
+        navigation:
+          enter: ":e +22 src/bob.c"
+    onTo:
+      content: "Receiving"
+      vim:
+        navigation:
+          enter: ":e +16 src/alice.c"
+  -
+    type: communication
+    content: toCharlie
+    fromEntityId: 0
+    toEntityId: 2
+    vim:
+      navigation:
+        enter: ":e +26 src/messages.h"
+    onFrom:
+      vim:
+        navigation:
+          enter: ":e +19 src/alice.c"
+      content: snd
+    onTo:
+      content: rcv
+      vim:
+        navigation:
+          enter: ":e +8 src/charlie.c"
+  -
+    type: variant
+    padding: [0,2,3,2]
+    branchList:
+      -
+        name: opt1
+        actionList:
+          -
+            type: 'on'
+            entityId: 3
+            content: event1 
+            margin: [0,0,2,0]
+            vim:
+              navigation:
+                enter: ":e +15 src/daisy.c"
+          -
+            type: communication
+            fromEntityId: 3
+            toEntityId: 0
+            content: hello
+            vim:
+              navigation:
+                enter: ":e +35 src/messages.h"
+            onTo:
+              content: "Received It!"
+              vim:
+                navigation:
+                  enter: ":e +31 src/alice.c"
+            onFrom:
+              content: "Send It!"
+              vim:
+                navigation:
+                  enter: ":e +18 src/daisy.c"
+      -
+        name: opt2
+        actionList:
+          -
+            type: 'on'
+            entityId: 3
+            content: event2 
+            margin: [0,0,2,0]
+            vim:
+              navigation:
+                enter: ":e +22 src/daisy.c"
+          -
+            type: communication
+            fromEntityId: 3
+            toEntityId: 1
+            content: hello
+            vim:
+              navigation:
+                enter: ":e +35 src/messages.h"
+            onTo:
+              content: "Received It!"
+              vim:
+                navigation:
+                  enter: ":e +30 src/bob.c"
+            onFrom:
+              content: "Send It!"
+              vim:
+                navigation:
+                  enter: ":e +25 src/daisy.c"
+
+
+
+      
+  

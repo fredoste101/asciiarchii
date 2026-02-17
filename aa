@@ -6,4 +6,4 @@ THIS_CMD=${BASH_SOURCE[0]}
 THIS_DIR=$(dirname $THIS_CMD)
 
 
-python3.6 $THIS_DIR/main.py $@
+python $THIS_DIR/main.py $@

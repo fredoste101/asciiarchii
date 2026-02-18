@@ -603,8 +603,7 @@ function ASCIIARCHII_sequenceBufferLeave()
 
 	if exists("b:ASCIIARCHII_mainWindowId")
 	    if b:ASCIIARCHII_mainWindowId != 0 && win_getid() == b:ASCIIARCHII_mainWindowId
-	       	if b:ASCIIARCHII_headerWindowId != 0 && win_id2win(b:ASCIIARCHII_headerWindowId) != 0
-
+	       	if ASCIIARCHII_headerExists() 
 				"We are in main. Save positions in both main and header
 				let b:ASCIIARCHII_mainWindowPos = getcurpos()
 				call win_gotoid(b:ASCIIARCHII_headerWindowId)
@@ -691,7 +690,7 @@ endfunction
 
 
 function! ASCIIARCHII_setOptions()
-	"Set the options for the AA-buffer
+	" Set the options for the AA-buffer
 
 	"To make gg go to same column at first row when jumping back and
 	"forth. Its really nice. But, even nicer is the open-header

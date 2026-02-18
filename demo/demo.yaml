@@ -22,13 +22,23 @@ itemList:
           navigation:
             enter: ":e +40 src/alice.c"
       - 
-        id:     1
-        type:   entity 
-        name:   bob
-        margin: [0,0,0,0]
-        vim:
-          navigation:
-            enter: ":e +39 src/bob.c"
+        type: container
+        name: subLevel
+        padding: [0,1,0,1]
+        itemList:
+          -
+            id:     1
+            type:   entity 
+            name:   bob
+            margin: [0,0,0,0]
+            vim:
+              navigation:
+                enter: ":e +39 src/bob.c"
+  -
+    type: container
+    name: otherTop
+    margin: [0, 0, 0, 5]
+    itemList:
       -
         id:     2
         type:   entity

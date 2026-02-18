@@ -842,12 +842,13 @@ def getSequenceGraph(sequence):
     """
         Get the sequence graph as a string
 
-        Due to poor intellectual capacity,
+        Due to poor intellectual capacity of urs truly,
         this must be run also in order to determine where the middle columns will be,
         and thus save these values in their corresponding entities,
         so we can color them in vim... not very nice, but it is what it is
 
-        And also to be able to color the containers properly, since they overlap with timeLines...
+        And also to be able to color the containers properly, 
+        since they overlap with timeLines...
     """
 
     graphStringListList = []
@@ -2491,6 +2492,7 @@ def resizeItemWidth(sequence):
     resizeCommunications(sequence)
 
     debug.debugPrint("RESIZING END", "RESIZING")
+
     debug.debugPrint("resizeItemWidth END", "FUNCTION")
 
 
@@ -3018,11 +3020,11 @@ def initializeActions(sequence):
 
 def determineHeightOfSequence(sequence):
     """
-        The height of the sequence is
-            the height of the header + 
-            some margin to first action +
-            the height of all actions +
-            margin after last action
+        The height of the sequence is:
+            <the height of the header>    + 
+            <some margin to first action> +
+            <the height of all actions>   +
+            <margin after last action>
     """
     
     totalHeight = sequence["header"]["size"][1] + sequence["marginToFirstAction"] + sequence["marginAfterLastAction"]
@@ -3091,7 +3093,9 @@ def initializeActionVim(action):
 def vimInitialize(sequence):
     """
         Initialize the vim-attribute for every entity (should be for every type of thing later...) 
-        Also, should be made sort of optional?
+
+        Also, should be made sort of optional? 
+        If we don't want to run with vim later...
     """
 
     debug.debugPrint("vimInitialize BEGIN", "FUNCTION")

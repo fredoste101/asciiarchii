@@ -258,17 +258,6 @@ See README_vim.txt
 === TODO LIST ===
 Things that I want to do to increase functionality
 
-* Sender received for communications. 
-  To jump to send-point and receive point with graphical ting
-
-   |            |
-  +-+   COM    +-+
-  |S| -------> |R|
-  +-+          +-+
-   |            |
-
- Should be relativaly straight forward. If on and communication works properly,
- this is just both combined :)
 
 *starting/activation of entity like:
 
